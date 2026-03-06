@@ -16,7 +16,7 @@ export const links = () => [
 
 export const loader = async ({ request }) => {
   return json({
-    apiKey: process.env.SHOPIFY_API_KEY || "89faf3e331fad9beb46658573ca89bcc",
+    apiKey: process.env.SHOPIFY_API_KEY || "27517ab4332a52e2c5c637a86ce4700d",
   });
 };
 
