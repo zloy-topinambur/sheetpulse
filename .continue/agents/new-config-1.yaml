@@ -1,0 +1,20 @@
+name: Local Vibecoding
+version: 1.0.0
+schema: v1
+
+# 1. ЧАТ-МОДЕЛИ (Для Ctrl+L и Ctrl+I)
+# Мы подключаем твою DeepSeek R1 8b через Ollama
+models:
+  - name: DeepSeek R1
+    provider: ollama
+    model: deepseek-r1:8b
+
+# 2. АВТОКОМПЛИТ (Для Tab)
+# Мы подключаем StarCoder2 3b для быстрого дописывания кода
+tabAutocompleteModel:
+  name: StarCoder2
+  provider: ollama
+  model: starcoder2:3b
+
+# Настройки телеметрии (отключаем лишнее)
+allowAnonymousTelemetry: false

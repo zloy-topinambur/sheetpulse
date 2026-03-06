@@ -1,0 +1,42 @@
+# Shopify App Configuration
+# Learn more: https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "89faf3e331fad9beb46658573ca89bcc"
+name = "SheetPulse"
+
+# Application URL
+# Для локальной разработки: application_url = "http://localhost:3000"
+# Для production: application_url = "https://sheetpulse.onrender.com"
+application_url = "https://sheetpulse.onrender.com"
+
+# Embedded app configuration
+embedded = true
+
+[build]
+automatically_update_urls_on_dev = true
+include_config_on_deploy = true
+
+[webhooks]
+api_version = "2026-04"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/scopes_update" ]
+  uri = "/webhooks"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks"
+
+[access_scopes]
+# Scopes required by your app
+# Learn more: https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_customers,write_customers,read_orders,read_products,write_products,write_script_tags"
+
+[auth]
+# Redirect URLs for OAuth flow
+# Must match the URLs configured in Shopify Partner Dashboard
+redirect_urls = [
+  "https://sheetpulse.onrender.com/auth/callback",
+  "https://sheetpulse.onrender.com/auth/shopify/callback",
+  "https://sheetpulse.onrender.com/app/billing"
+]
