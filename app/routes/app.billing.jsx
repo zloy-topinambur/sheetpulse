@@ -1,6 +1,7 @@
-import { json, redirect } from "@remix-run/node";
-import { useLoaderData, useSubmit, useNavigation } from "@remix-run/react";
+import { json } from "@remix-run/node";
+import { useLoaderData, useActionData, useSubmit, useNavigation } from "@remix-run/react";
 import { Page, Layout, Card, Button, Text, Banner } from "@shopify/polaris";
+import { useEffect } from "react";
 import { authenticate } from "../shopify.server";
 
 export async function loader({ request }) {
@@ -19,7 +20,6 @@ export async function loader({ request }) {
           status
           test
           trialDays
-          currentPeriodEnd
         }
       }
     }`
@@ -99,14 +99,15 @@ export async function action({ request }) {
       return json({ errors: createData.data.appSubscriptionCreate.userErrors });
     }
 
-    console.log("✅ Subscription created:", createData.data.appSubscriptionCreate.appSubscription);
-    console.log("✅ Confirmation URL:", createData.data.appSubscriptionCreate.confirmationUrl);
+    const confirmationUrl = createData.data.appSubscriptionCreate.confirmationUrl;
 
-    // Для dev store: просто возвращаемся в приложение
-    // Для production: редирект на confirmationUrl
+    console.log("✅ Subscription created:", createData.data.appSubscriptionCreate.appSubscription);
+    console.log("✅ Confirmation URL:", confirmationUrl);
+
+    // Возвращаем confirmationUrl для обработки на фронтенде
     return json({
-      confirmationUrl: createData.data.appSubscriptionCreate.confirmationUrl,
-      message: "Subscription created. On dev stores, billing confirmation may not work without a payment method."
+      confirmationUrl,
+      subscription: createData.data.appSubscriptionCreate.appSubscription
     });
 
   } catch (error) {
@@ -117,9 +118,19 @@ export async function action({ request }) {
 
 export default function Billing() {
   const { subscription } = useLoaderData();
+  const actionData = useActionData(); // Получаем данные из action
   const submit = useSubmit();
   const navigation = useNavigation();
   const isLoading = navigation.state === "submitting";
+
+  // Обрабатываем редирект на confirmationUrl
+  useEffect(() => {
+    if (actionData?.confirmationUrl) {
+      console.log("🔄 Redirecting to Shopify confirmation page:", actionData.confirmationUrl);
+      // Открываем в том же окне (top-level redirect)
+      window.open(actionData.confirmationUrl, "_top");
+    }
+  }, [actionData]);
 
   const handleSubscribe = (planType) => {
     console.log("🖱️ Button clicked:", planType);
@@ -132,6 +143,18 @@ export default function Billing() {
     <Page title="Billing & Subscription">
       <Layout>
         <Layout.Section>
+          {actionData?.error && (
+            <Banner status="critical">
+              <p>Error: {actionData.error}</p>
+            </Banner>
+          )}
+
+          {actionData?.errors && (
+            <Banner status="critical">
+              <p>Errors: {actionData.errors.map(e => e.message).join(", ")}</p>
+            </Banner>
+          )}
+
           {subscription ? (
             <Card>
               <div style={{ padding: "1rem" }}>
@@ -142,9 +165,6 @@ export default function Billing() {
                   <p><strong>Test mode:</strong> {subscription.test ? "Yes ✅" : "No"}</p>
                   {subscription.trialDays > 0 && (
                     <p><strong>Trial days:</strong> {subscription.trialDays} days 🎉</p>
-                  )}
-                  {subscription.currentPeriodEnd && (
-                    <p><strong>Current period ends:</strong> {new Date(subscription.currentPeriodEnd).toLocaleDateString()}</p>
                   )}
                 </div>
               </div>
@@ -157,8 +177,7 @@ export default function Billing() {
                   <p>Unlock premium features with our subscription</p>
 
                   <Banner status="info" style={{ marginTop: "1rem" }}>
-                    <p>💡 Test mode: Subscriptions will be created but may require confirmation on production stores.</p>
-                    <p>On dev stores, you can test all features without actual payment.</p>
+                    <p>💡 <strong>Dev Store Note:</strong> You'll be redirected to Shopify's confirmation page. On development stores, you may need to add a payment method in Settings → Billing to complete the subscription.</p>
                   </Banner>
 
                   <div style={{ marginTop: "1.5rem", display: "flex", gap: "1rem", flexWrap: "wrap" }}>
