@@ -37,13 +37,12 @@ export const loader = async ({ request }) => {
     planName = shopData.data?.shop?.plan?.displayName || "Unknown";
     console.log("📊 Plan:", planName);
 
-    // Определяем dev store
-    isDevStore = planName.includes("partner_test") ||
-                 planName.includes("development") ||
-                 planName.includes("trial_plan") ||
-                 planName.includes("affiliate") ||
-                 planName.includes("test") ||
-                 planName.includes("Test");
+    // Определяем dev store (case-insensitive)
+    isDevStore = planName.toLowerCase().includes("partner") ||
+                 planName.toLowerCase().includes("development") ||
+                 planName.toLowerCase().includes("trial") ||
+                 planName.toLowerCase().includes("affiliate") ||
+                 planName.toLowerCase().includes("app development");
     console.log("🔧 Is dev store:", isDevStore);
 
     // На dev store пропускаем проверку подписки
