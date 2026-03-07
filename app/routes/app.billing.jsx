@@ -102,21 +102,55 @@ export async function action({ request }) {
     }
 
     const subscriptionId = createData.data.appSubscriptionCreate.appSubscription.id;
+    const initialStatus = createData.data.appSubscriptionCreate.appSubscription.status;
+
     console.log("✅ Subscription created, ID:", subscriptionId);
+    console.log("✅ Initial status:", initialStatus);
     console.log("✅ Trial days:", createData.data.appSubscriptionCreate.appSubscription.trialDays);
+
+    // ← ВАЖНО: Проверяем статус ПЕРЕД активацией
+    if (initialStatus === "ACTIVE") {
+      console.log("✅✅ Subscription is already ACTIVE, no need to activate!");
+      console.log("⏳ Waiting 3 seconds for Shopify to sync...");
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      return redirect("/app");
+    }
 
     // Шаг 2: Для dev store с test=true подписка уже активна после создания
-    console.log("✅✅✅ Subscription ACTIVATED automatically in test mode!");
-    console.log("✅ Status: ACTIVE (test mode)");
-    console.log("✅ Trial days:", createData.data.appSubscriptionCreate.appSubscription.trialDays);
-    console.log("✅ Test mode: true");
+    // Shopify автоматически активирует тестовые подписки
+    console.log("✅✅ Subscription is already ACTIVE in test mode!");
+    console.log("⏳ Waiting 3 seconds for Shopify to sync...");
+    await new Promise(resolve => setTimeout(resolve, 3000));
 
-    // Получаем данные активной подписки
-    const activatedSubscription = createData.data.appSubscriptionCreate.appSubscription;
+    // Дополнительная проверка: получаем текущее состояние подписки
+    console.log("🔍 Verifying subscription status...");
+    const verifyResponse = await admin.graphql(
+      `#graphql
+      query {
+        currentAppInstallation {
+          activeSubscriptions {
+            id
+            name
+            status
+            trialDays
+            test
+          }
+        }
+      }`
+    );
 
-    // Шаг 3: Небольшая задержка перед редиректом, чтобы Shopify успел обновить данные
-    console.log("⏳ Waiting 2 seconds before redirect to ensure subscription is ready...");
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    const verifyData = await verifyResponse.json();
+    console.log("📊 Verification response:", JSON.stringify(verifyData, null, 2));
+
+    const subscriptions = verifyData.data?.currentAppInstallation?.activeSubscriptions || [];
+    if (subscriptions.length > 0) {
+      const verifiedSubscription = subscriptions[0];
+      console.log("✅ Verified status:", verifiedSubscription.status);
+      console.log("✅ Verified trial days:", verifiedSubscription.trialDays);
+    } else {
+      console.log("⚠️ Could not verify subscription, but proceeding anyway...");
+    }
+
     console.log("🔄 Redirecting to /app...");
     return redirect("/app");
 

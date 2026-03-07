@@ -11,24 +11,57 @@ export const loader = async ({ request }) => {
   // authenticate.admin() автоматически обрабатывает OAuth
   const { admin, billing, session } = await authenticate.admin(request);
 
-  // Проверяем подписку
+  console.log("🔍 Проверка подписки в /app...");
+
+  // Проверяем подписку напрямую через GraphQL (более надежно)
   let hasSubscription = false;
+  let subscription = null;
 
   try {
-    const billingCheck = await billing.check({
-      plans: ["Monthly Subscription"],
-      isTest: true,
-    });
-    hasSubscription = billingCheck.hasActivePayment;
+    const response = await admin.graphql(
+      `#graphql
+      query {
+        currentAppInstallation {
+          activeSubscriptions {
+            id
+            name
+            status
+            test
+            trialDays
+            currentPeriodEnd
+          }
+        }
+      }`
+    );
+
+    const data = await response.json();
+    const subscriptions = data.data?.currentAppInstallation?.activeSubscriptions || [];
+    hasSubscription = subscriptions.length > 0;
+    subscription = subscriptions[0] || null;
+
+    console.log("📊 Active subscriptions:", subscriptions);
+    console.log("✅ Has subscription:", hasSubscription);
+    if (subscription) {
+      console.log("✅ Subscription status:", subscription.status);
+      console.log("✅ Subscription test mode:", subscription.test);
+      console.log("✅ Subscription trial days:", subscription.trialDays);
+    }
   } catch (err) {
-    console.log("Billing check error:", err.message);
+    console.error("❌ Subscription check error:", err);
+    // Если GraphQL запрос не сработал, пробуем через billing.check
+    try {
+      const billingCheck = await billing.check({
+        plans: ["Monthly Subscription"],
+        isTest: true,
+      });
+      hasSubscription = billingCheck.hasActivePayment;
+      console.log("🔄 Fallback to billing.check, has subscription:", hasSubscription);
+    } catch (billingErr) {
+      console.error("❌ Billing check error:", billingErr.message);
+    }
   }
 
-  // Возвращаем флаг подписки, но НЕ делаем серверный редирект
-  // Клиентский редирект будет обработан в компоненте
-  const billingStatus = { hasPayment: hasSubscription, isTrial: false };
-
-  // Если есть trial - тоже разрешаем доступ
+  // Если есть активная подписка, получаем метаданные
   const response = await admin.graphql(
     `#graphql
     query {
@@ -59,9 +92,10 @@ export const loader = async ({ request }) => {
     status: fields.find(f => f.node.key === 'status')?.node.value || "active",
     widgetPosition: fields.find(f => f.node.key === 'w_pos')?.node.value || "right",
     shop: session.shop,
-    billingStatus,
+    billingStatus: { hasPayment: hasSubscription, isTrial: false },
     requiresAuth: false,
-    hasSubscription // Добавляем флаг для клиентского редиректа
+    hasSubscription, // Добавляем флаг для клиентского редиректа
+    subscription // Добавляем полную информацию о подписке
   });
 };
 
