@@ -1,118 +1,128 @@
-import { redirect } from "@remix-run/node";
-import { json } from "@remix-run/node";
+import { json, redirect } from "@remix-run/node";
 import { useLoaderData, useActionData, useNavigation } from "@remix-run/react";
 import { Page, Layout, Card, BlockStack, Text, Banner, Button, List, InlineStack, Badge, Form } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
 
-// Планы подписки
-const MONTHLY_PLAN = "Monthly Subscription";
-
+// Проверка текущей подписки
 export const loader = async ({ request }) => {
-  let admin, session;
-  
-  try {
-    console.log("🔍 Проверка аутентификации в биллинге...");
-    const auth = await authenticate.admin(request);
-    admin = auth.admin;
-    session = auth.session;
-    console.log("✅ Аутентификация успешна, магазин:", session.shop);
-  } catch (error) {
-    console.log("⚠️ Auth error:", error.message);
-    throw error;
-  }
+  const { admin } = await authenticate.admin(request);
 
-  // Проверяем статус подписки
-  let billingStatus = { hasPayment: false, isTrial: false, trialDaysRemaining: 0 };
-  
   try {
-    console.log("🔍 Проверка биллинга...");
-    const billingCheck = await admin.billing.check({
-      plans: [MONTHLY_PLAN],
-    });
-    console.log("✅ Billing check result:", billingCheck);
-    
-    billingStatus.hasPayment = billingCheck.hasActivePayment || false;
-    
-    if (billingCheck.appSubscriptions && billingCheck.appSubscriptions.length > 0) {
-      const sub = billingCheck.appSubscriptions[0];
-      billingStatus.isTrial = sub.status === 'ACTIVE' && sub.trialDays > 0;
-      
-      if (sub.trialDays > 0 && sub.createdAt) {
-        const createdDate = new Date(sub.createdAt);
-        const now = new Date();
-        const daysPassed = Math.floor((now - createdDate) / (1000 * 60 * 60 * 24));
-        billingStatus.trialDaysRemaining = Math.max(0, sub.trialDays - daysPassed);
-      }
+    const response = await admin.graphql(
+      `#graphql
+      query {
+        currentAppInstallation {
+          activeSubscriptions {
+            id
+            name
+            status
+            test
+            trialDays
+            currentPeriodEnd
+          }
+        }
+      }`
+    );
+    const data = await response.json();
+
+    const subscription = data.data.currentAppInstallation.activeSubscriptions[0] || null;
+    console.log("✅ Current subscription:", subscription);
+
+    // Если уже есть активная подписка - редирект на главную
+    if (subscription && subscription.status === 'ACTIVE') {
+      return redirect("/app");
     }
-  } catch (err) {
-    console.log("❌ Billing check error:", err.message);
-    console.log("❌ Admin object:", !!admin);
-    console.log("❌ Admin.billing:", !!admin?.billing);
-  }
 
-  // Если уже есть активная подписка - редирект на главную
-  if (billingStatus.hasPayment) {
-    return redirect("/app");
+    return json({
+      subscription,
+      shop: admin.session.shop || "unknown",
+      requiresAuth: false
+    });
+    
+  } catch (error) {
+    console.error("❌ Billing check error:", error);
+    return json({ 
+      subscription: null, 
+      error: error.message,
+      shop: admin.session.shop || "unknown"
+    });
   }
-
-  return json({
-    billingStatus,
-    shop: session?.shop || "unknown",
-    requiresAuth: false
-  });
 };
 
+// Создание подписки
 export const action = async ({ request }) => {
-  let admin, session;
-  
+  const { admin } = await authenticate.admin(request);
+
   try {
-    const auth = await authenticate.admin(request);
-    admin = auth.admin;
-    session = auth.session;
+    const formData = await request.formData();
+    const planType = formData.get("planType");
+    
+    const url = new URL(request.url);
+    const returnUrl = `${url.origin}/app/billing`;
+
+    const response = await admin.graphql(
+      `#graphql
+      mutation AppSubscriptionCreate(
+        $name: String!
+        $returnUrl: URL!
+        $test: Boolean
+        $lineItems: [AppSubscriptionLineItemInput!]!
+      ) {
+        appSubscriptionCreate(
+          name: $name
+          returnUrl: $returnUrl
+          test: $test
+          lineItems: $lineItems
+        ) {
+          userErrors {
+            field
+            message
+          }
+          confirmationUrl
+          appSubscription {
+            id
+            status
+          }
+        }
+      }`,
+      {
+        variables: {
+          name: "Monthly Subscription",
+          returnUrl: returnUrl,
+          test: true, // Для тестирования без реальных платежей
+          lineItems: [
+            {
+              plan: {
+                appRecurringPricingDetails: {
+                  price: { amount: 4.99, currencyCode: "USD" },
+                  interval: "EVERY_30_DAYS",
+                },
+              },
+            },
+          ],
+        },
+      }
+    );
+
+    const data = await response.json();
+    if (data.data.appSubscriptionCreate.userErrors.length > 0) {
+      console.error("❌ Subscription errors:", data.data.appSubscriptionCreate.userErrors);
+      return json({ errors: data.data.appSubscriptionCreate.userErrors });
+    }
+    if (data.data.appSubscriptionCreate.confirmationUrl) {
+      console.log("✅ Redirecting to:", data.data.appSubscriptionCreate.confirmationUrl);
+      return redirect(data.data.appSubscriptionCreate.confirmationUrl);
+    }
+    return json({ success: true });
+    
   } catch (error) {
-    console.log("⚠️ Auth error in action:", error.message);
-    return json({ error: "Authentication failed. Please refresh the page." });
+    console.error("❌ Subscription creation error:", error);
+    return json({ error: error.message }, { status: 500 });
   }
-  
-  const formData = await request.formData();
-  const planType = formData.get("planType");
-  
-  const url = new URL(request.url);
-  const returnUrl = `${url.origin}/app/billing`;
-
-  try {
-    let billingResponse;
-    
-    if (planType === "trial") {
-      console.log("📊 Creating subscription with trial...");
-      billingResponse = await admin.billing.request({
-        plan: MONTHLY_PLAN,
-        returnUrl,
-      });
-    } else if (planType === "paid") {
-      console.log("📊 Creating subscription without trial...");
-      billingResponse = await admin.billing.request({
-        plan: MONTHLY_PLAN,
-        trialDays: 0,
-        returnUrl,
-      });
-    }
-    
-    // ✅ Редирект на страницу подтверждения Shopify
-    if (billingResponse && billingResponse.confirmationUrl) {
-      return redirect(billingResponse.confirmationUrl);
-    }
-    
-  } catch (err) {
-    console.log("Billing request error:", err.message);
-    return json({ error: err.message });
-  }
-
-  return json({ error: "Failed to create subscription" });
 };
 
 export default function Billing() {
-  const { billingStatus } = useLoaderData();
+  const { subscription, error } = useLoaderData();
   const actionData = useActionData();
   const navigation = useNavigation();
   
@@ -127,8 +137,8 @@ export default function Billing() {
               <BlockStack gap="400">
                 <InlineStack align="space-between">
                   <Text variant="headingLg">Subscribe to SheetPulse</Text>
-                  {billingStatus.isTrial && billingStatus.trialDaysRemaining > 0 && (
-                    <Badge tone="info">Trial: {billingStatus.trialDaysRemaining} days left</Badge>
+                  {subscription?.trialDays > 0 && (
+                    <Badge tone="info">Trial: {subscription.trialDays} days left</Badge>
                   )}
                 </InlineStack>
                 <Text variant="bodyMd">
@@ -136,6 +146,12 @@ export default function Billing() {
                 </Text>
               </BlockStack>
             </Card>
+
+            {error && (
+              <Banner title="Billing Error" tone="critical">
+                <p>{error}</p>
+              </Banner>
+            )}
 
             {actionData?.error && (
               <Banner title="Subscription Error" tone="critical">

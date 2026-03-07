@@ -7,6 +7,7 @@ import {
   DeliveryMethod,
   shopifyApp,
   BillingInterval,
+  ApiVersion,
 } from "@shopify/shopify-app-remix/server";
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
 import { restResources } from "@shopify/shopify-api/rest/admin/2024-07";
@@ -25,7 +26,7 @@ function getAppUrl() {
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
   apiSecretKey: process.env.SHOPIFY_API_SECRET,
-  apiVersion: "2025-01",
+  apiVersion: ApiVersion.October24,
   scopes: process.env.SCOPES?.split(","),
   appUrl: getAppUrl(),
   authPathPrefix: "/auth",
@@ -40,7 +41,7 @@ const shopify = shopifyApp({
       amount: 4.99,
       currencyCode: 'USD',
       interval: BillingInterval.Every30Days,
-    trialDays: 7, // 7 дней бесплатно
+      trialDays: 7, // 7 дней бесплатно
       replacementBehavior: 'APPLY_IMMEDIATELY',
     },
   },
@@ -60,6 +61,7 @@ const shopify = shopifyApp({
   future: {
     v3_webhookAdminContext: true,
     v3_authenticatePublic: true,
+    unstable_newEmbeddedAuthStrategy: true,
   },
   // ВАЖНО: SESSION_SECRET обязателен для production
   sessionSecret: process.env.SESSION_SECRET,
