@@ -245,7 +245,13 @@ export default function Index() {
   useEffect(() => {
     if (!settings.hasSubscription) {
       console.log("⚠️ No subscription, redirecting to billing...");
-      navigate("/app/billing");
+      // Небольшая задержка, чтобы убедиться, что подписка действительно не активна
+      const timer = setTimeout(() => {
+        console.log("🔄 Confirming no subscription, redirecting...");
+        navigate("/app/billing");
+      }, 1000);
+
+      return () => clearTimeout(timer);
     }
   }, [settings.hasSubscription, navigate]);
 

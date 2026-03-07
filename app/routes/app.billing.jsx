@@ -114,7 +114,10 @@ export async function action({ request }) {
     // Получаем данные активной подписки
     const activatedSubscription = createData.data.appSubscriptionCreate.appSubscription;
 
-    // Шаг 3: Редирект на главную страницу
+    // Шаг 3: Небольшая задержка перед редиректом, чтобы Shopify успел обновить данные
+    console.log("⏳ Waiting 2 seconds before redirect to ensure subscription is ready...");
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    console.log("🔄 Redirecting to /app...");
     return redirect("/app");
 
   } catch (error) {
