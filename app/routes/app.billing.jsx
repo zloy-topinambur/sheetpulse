@@ -43,7 +43,6 @@ export async function action({ request }) {
   console.log("📋 Plan type:", planType);
 
   try {
-    // Шаг 1: Создаём подписку
     const createResponse = await admin.graphql(
       `#graphql
       mutation AppSubscriptionCreate(
@@ -94,65 +93,21 @@ export async function action({ request }) {
     );
 
     const createData = await createResponse.json();
-    console.log("📊 Create response:", JSON.stringify(createData, null, 2));
 
     if (createData.data.appSubscriptionCreate.userErrors.length > 0) {
-      console.error("❌ Create errors:", createData.data.appSubscriptionCreate.userErrors);
+      console.error("❌ Errors:", createData.data.appSubscriptionCreate.userErrors);
       return json({ errors: createData.data.appSubscriptionCreate.userErrors });
     }
 
-    const subscriptionId = createData.data.appSubscriptionCreate.appSubscription.id;
-    const initialStatus = createData.data.appSubscriptionCreate.appSubscription.status;
+    console.log("✅ Subscription created:", createData.data.appSubscriptionCreate.appSubscription);
+    console.log("✅ Confirmation URL:", createData.data.appSubscriptionCreate.confirmationUrl);
 
-    console.log("✅ Subscription created, ID:", subscriptionId);
-    console.log("✅ Initial status:", initialStatus);
-    console.log("✅ Trial days:", createData.data.appSubscriptionCreate.appSubscription.trialDays);
-
-    // ← ВАЖНО: Проверяем статус ПЕРЕД активацией
-    if (initialStatus === "ACTIVE") {
-      console.log("✅✅ Subscription is already ACTIVE, no need to activate!");
-      console.log("⏳ Waiting 3 seconds for Shopify to sync...");
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      return redirect("/app");
-    }
-
-    // Шаг 2: Для dev store с test=true подписка уже активна после создания
-    // Shopify автоматически активирует тестовые подписки
-    console.log("✅✅ Subscription is already ACTIVE in test mode!");
-    console.log("⏳ Waiting 3 seconds for Shopify to sync...");
-    await new Promise(resolve => setTimeout(resolve, 3000));
-
-    // Дополнительная проверка: получаем текущее состояние подписки
-    console.log("🔍 Verifying subscription status...");
-    const verifyResponse = await admin.graphql(
-      `#graphql
-      query {
-        currentAppInstallation {
-          activeSubscriptions {
-            id
-            name
-            status
-            trialDays
-            test
-          }
-        }
-      }`
-    );
-
-    const verifyData = await verifyResponse.json();
-    console.log("📊 Verification response:", JSON.stringify(verifyData, null, 2));
-
-    const subscriptions = verifyData.data?.currentAppInstallation?.activeSubscriptions || [];
-    if (subscriptions.length > 0) {
-      const verifiedSubscription = subscriptions[0];
-      console.log("✅ Verified status:", verifiedSubscription.status);
-      console.log("✅ Verified trial days:", verifiedSubscription.trialDays);
-    } else {
-      console.log("⚠️ Could not verify subscription, but proceeding anyway...");
-    }
-
-    console.log("🔄 Redirecting to /app...");
-    return redirect("/app");
+    // Для dev store: просто возвращаемся в приложение
+    // Для production: редирект на confirmationUrl
+    return json({
+      confirmationUrl: createData.data.appSubscriptionCreate.confirmationUrl,
+      message: "Subscription created. On dev stores, billing confirmation may not work without a payment method."
+    });
 
   } catch (error) {
     console.error("❌ Error:", error);
@@ -202,7 +157,8 @@ export default function Billing() {
                   <p>Unlock premium features with our subscription</p>
 
                   <Banner status="info" style={{ marginTop: "1rem" }}>
-                    <p>💡 Test mode: Subscriptions will be activated automatically without payment</p>
+                    <p>💡 Test mode: Subscriptions will be created but may require confirmation on production stores.</p>
+                    <p>On dev stores, you can test all features without actual payment.</p>
                   </Banner>
 
                   <div style={{ marginTop: "1.5rem", display: "flex", gap: "1rem", flexWrap: "wrap" }}>

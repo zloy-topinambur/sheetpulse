@@ -12,56 +12,83 @@ export const loader = async ({ request }) => {
   const { admin, billing, session } = await authenticate.admin(request);
 
   console.log("🔍 Проверка подписки в /app...");
+  console.log("🏪 Shop:", session.shop);
 
-  // Проверяем подписку напрямую через GraphQL (более надежно)
+  // Проверяем, это dev store или production
   let hasSubscription = false;
   let subscription = null;
+  let isDevStore = false;
+  let planName = "Unknown";
 
   try {
-    const response = await admin.graphql(
+    // Получаем информацию о плане магазина
+    const shopResponse = await admin.graphql(
       `#graphql
       query {
-        currentAppInstallation {
-          activeSubscriptions {
-            id
-            name
-            status
-            test
-            trialDays
-            currentPeriodEnd
+        shop {
+          plan {
+            displayName
           }
         }
       }`
     );
 
-    const data = await response.json();
-    const subscriptions = data.data?.currentAppInstallation?.activeSubscriptions || [];
-    hasSubscription = subscriptions.length > 0;
-    subscription = subscriptions[0] || null;
+    const shopData = await shopResponse.json();
+    planName = shopData.data?.shop?.plan?.displayName || "Unknown";
+    console.log("📊 Plan:", planName);
 
-    console.log("📊 Active subscriptions:", subscriptions);
-    console.log("✅ Has subscription:", hasSubscription);
-    if (subscription) {
-      console.log("✅ Subscription status:", subscription.status);
-      console.log("✅ Subscription test mode:", subscription.test);
-      console.log("✅ Subscription trial days:", subscription.trialDays);
+    // Определяем dev store
+    isDevStore = planName.includes("partner_test") ||
+                 planName.includes("development") ||
+                 planName.includes("trial_plan") ||
+                 planName.includes("affiliate") ||
+                 planName.includes("test") ||
+                 planName.includes("Test");
+    console.log("🔧 Is dev store:", isDevStore);
+
+    // На dev store пропускаем проверку подписки
+    if (!isDevStore) {
+      const response = await admin.graphql(
+        `#graphql
+        query {
+          currentAppInstallation {
+            activeSubscriptions {
+              id
+              name
+              status
+              test
+              trialDays
+              currentPeriodEnd
+            }
+          }
+        }`
+      );
+
+      const data = await response.json();
+      const subscriptions = data.data?.currentAppInstallation?.activeSubscriptions || [];
+      hasSubscription = subscriptions.length > 0;
+      subscription = subscriptions[0] || null;
+
+      console.log("📊 Active subscriptions:", subscriptions);
+      console.log("✅ Has subscription:", hasSubscription);
+      if (subscription) {
+        console.log("✅ Subscription status:", subscription.status);
+        console.log("✅ Subscription test mode:", subscription.test);
+        console.log("✅ Subscription trial days:", subscription.trialDays);
+      }
+    } else {
+      console.log("✅ Dev store detected, skipping subscription check");
+      hasSubscription = true; // Разрешаем доступ на dev store
     }
   } catch (err) {
     console.error("❌ Subscription check error:", err);
-    // Если GraphQL запрос не сработал, пробуем через billing.check
-    try {
-      const billingCheck = await billing.check({
-        plans: ["Monthly Subscription"],
-        isTest: true,
-      });
-      hasSubscription = billingCheck.hasActivePayment;
-      console.log("🔄 Fallback to billing.check, has subscription:", hasSubscription);
-    } catch (billingErr) {
-      console.error("❌ Billing check error:", billingErr.message);
-    }
+    // При ошибке предполагаем dev store для тестирования
+    isDevStore = true;
+    hasSubscription = true;
+    console.log("⚠️ Error occurred, assuming dev store for testing");
   }
 
-  // Если есть активная подписка, получаем метаданные
+  // Получаем метаданные
   const response = await admin.graphql(
     `#graphql
     query {
@@ -95,7 +122,9 @@ export const loader = async ({ request }) => {
     billingStatus: { hasPayment: hasSubscription, isTrial: false },
     requiresAuth: false,
     hasSubscription, // Добавляем флаг для клиентского редиректа
-    subscription // Добавляем полную информацию о подписке
+    subscription, // Добавляем полную информацию о подписке
+    isDevStore, // Флаг dev store
+    planName // Название плана
   });
 };
 
@@ -117,7 +146,7 @@ export const action = async ({ request }) => {
   const appRes = await admin.graphql(`{currentAppInstallation{id}}`);
   const appId = (await appRes.json()).data.currentAppInstallation.id;
   const data = Object.fromEntries(formData);
-  
+
   const m = [
     { namespace: "sheet_pulse", key: "q_json", type: "json", value: data.q, ownerId: appId },
     { namespace: "sheet_pulse", key: "g_url", type: "single_line_text_field", value: data.gurl, ownerId: appId },
@@ -140,7 +169,7 @@ function Preview({ questions, color, lang }) {
   const [selected, setSelected] = useState([]);
   const [textVal, setTextVal] = useState("");
   const [otherVal, setOtherVal] = useState("");
-  
+
   const q = questions[step];
 
   useEffect(() => { setSelected([]); setTextVal(""); setOtherVal(""); }, [step, questions]);
@@ -167,7 +196,7 @@ function Preview({ questions, color, lang }) {
 
   const handleOtherChange = (val) => { setOtherVal(val); if (val.trim().length > 0) setSelected([]); };
   const handleNext = () => { if (step < questions.length - 1) setStep(step + 1); else setDone(true); };
-  
+
   const i18n = {
     en: { next: "Next", finish: "Finish", thanks: "Thank you! 🚀", skip: "Not sure", other: "Other..." },
     es: { next: "Siguiente", finish: "Finalizar", thanks: "¡Gracias! 🚀", skip: "No lo sé", other: "Otro..." },
@@ -210,7 +239,7 @@ function Preview({ questions, color, lang }) {
          <span style={{fontSize:'22px', color:'#bbb', lineHeight:'0.5', cursor:'pointer'}}>×</span>
       </div>
       <p style={{fontWeight:'700', marginBottom:'15px', fontSize:'16px', color:'#111', lineHeight:'1.4'}}>{q?.label}</p>
-      
+
       <Box minHeight="120px">
         {q?.type.includes('emoji') && (
           <div style={{display: 'flex', justifyContent: isEmoji5 ? 'space-between' : 'space-around', gap: isEmoji5 ? '2px' : '5px', width: '100%', boxSizing: 'border-box', marginBottom: '10px'}}>
@@ -277,8 +306,8 @@ export default function Index() {
 
   // Клиентский редирект при отсутствии подписки
   useEffect(() => {
-    if (!settings.hasSubscription) {
-      console.log("⚠️ No subscription, redirecting to billing...");
+    if (!settings.hasSubscription && !settings.isDevStore) {
+      console.log("⚠️ No subscription on production store, redirecting to billing...");
       // Небольшая задержка, чтобы убедиться, что подписка действительно не активна
       const timer = setTimeout(() => {
         console.log("🔄 Confirming no subscription, redirecting...");
@@ -286,8 +315,12 @@ export default function Index() {
       }, 1000);
 
       return () => clearTimeout(timer);
+    } else if (settings.isDevStore) {
+      console.log("✅ Dev store detected, skipping subscription check");
+    } else {
+      console.log("✅ Subscription found:", settings.subscription);
     }
-  }, [settings.hasSubscription, navigate]);
+  }, [settings.hasSubscription, settings.isDevStore, settings.subscription, navigate]);
 
   const [questions, setQuestions] = useState(settings.questions);
   const [aCol, setACol] = useState(settings.aCol);
@@ -309,6 +342,34 @@ export default function Index() {
       <Layout>
         <Layout.Section>
           <BlockStack gap="500">
+
+            {settings.isDevStore && (
+              <Card>
+                <BlockStack gap="400">
+                  <Text variant="headingMd">🔧 Development Mode</Text>
+                  <Banner status="info">
+                    <p>This is a development store. Subscription check is disabled for testing purposes.</p>
+                    <p>Plan: {settings.planName}</p>
+                  </Banner>
+                </BlockStack>
+              </Card>
+            )}
+
+            {settings.subscription && (
+              <Card>
+                <BlockStack gap="400">
+                  <Text variant="headingMd">✅ Active Subscription</Text>
+                  <div style={{ marginTop: "1rem" }}>
+                    <p><strong>Plan:</strong> {settings.subscription.name}</p>
+                    <p><strong>Status:</strong> {settings.subscription.status}</p>
+                    <p><strong>Test mode:</strong> {settings.subscription.test ? "Yes" : "No"}</p>
+                    {settings.subscription.trialDays > 0 && (
+                      <p><strong>Trial days:</strong> {settings.subscription.trialDays} days 🎉</p>
+                    )}
+                  </div>
+                </BlockStack>
+              </Card>
+            )}
 
             <Card>
               <BlockStack gap="400">
@@ -373,7 +434,7 @@ export default function Index() {
               </Card>
             ))}
             <Button onClick={() => setQuestions([...questions, {id: Date.now(), type:'emoji', label:'New Question'}])}>Add Survey Step</Button>
-            
+
             {/* PREVIEW AFTER QUESTIONS */}
             <Card>
               <BlockStack gap="400" align="center">
@@ -387,7 +448,7 @@ export default function Index() {
                 </InlineStack>
               </BlockStack>
             </Card>
-            
+
             <Divider />
             <InlineStack align="space-between">
                <Text tone="subdued">Settings sync automatically when you click Sync.</Text>
