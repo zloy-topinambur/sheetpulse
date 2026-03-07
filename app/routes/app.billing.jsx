@@ -1,6 +1,7 @@
 import { json, redirect } from "@remix-run/node";
-import { useLoaderData, useActionData, useNavigation } from "@remix-run/react";
-import { Page, Layout, Card, BlockStack, Text, Banner, Button, List, InlineStack, Badge, Form } from "@shopify/polaris";
+import { useLoaderData, useActionData, useNavigation, useSubmit } from "@remix-run/react";
+import { Page, Layout, Card, BlockStack, Text, Banner, Button, List, InlineStack, Badge } from "@shopify/polaris";
+import { useEffect } from "react";
 import { authenticate } from "../shopify.server";
 
 // Проверка текущей подписки
@@ -65,12 +66,15 @@ export const loader = async ({ request }) => {
 
 // Создание подписки
 export const action = async ({ request }) => {
+  console.log("🚀 Billing action started");
+
   const { admin } = await authenticate.admin(request);
 
   try {
     const formData = await request.formData();
     const planType = formData.get("planType");
-    
+    console.log("📋 Creating subscription, plan:", planType);
+
     const url = new URL(request.url);
     const returnUrl = `${url.origin}/app/billing`;
 
@@ -80,12 +84,14 @@ export const action = async ({ request }) => {
         $name: String!
         $returnUrl: URL!
         $test: Boolean
+        $trialDays: Int
         $lineItems: [AppSubscriptionLineItemInput!]!
       ) {
         appSubscriptionCreate(
           name: $name
           returnUrl: $returnUrl
           test: $test
+          trialDays: $trialDays
           lineItems: $lineItems
         ) {
           userErrors {
@@ -104,6 +110,7 @@ export const action = async ({ request }) => {
           name: "Monthly Subscription",
           returnUrl: returnUrl,
           test: process.env.NODE_ENV === 'development', // Тестовый режим только для разработки
+          trialDays: planType === "trial" ? 7 : 0,
           lineItems: [
             {
               plan: {
@@ -119,16 +126,20 @@ export const action = async ({ request }) => {
     );
 
     const data = await response.json();
+    console.log("📊 Subscription response:", JSON.stringify(data, null, 2));
+
     if (data.data.appSubscriptionCreate.userErrors.length > 0) {
       console.error("❌ Subscription errors:", data.data.appSubscriptionCreate.userErrors);
       return json({ errors: data.data.appSubscriptionCreate.userErrors });
     }
+
     if (data.data.appSubscriptionCreate.confirmationUrl) {
-      console.log("✅ Redirecting to:", data.data.appSubscriptionCreate.confirmationUrl);
-      return redirect(data.data.appSubscriptionCreate.confirmationUrl);
+      console.log("✅ Confirmation URL:", data.data.appSubscriptionCreate.confirmationUrl);
+      return json({ confirmationUrl: data.data.appSubscriptionCreate.confirmationUrl });
     }
+
     return json({ success: true });
-    
+
   } catch (error) {
     console.error("❌ Subscription creation error:", error);
     return json({ error: error.message }, { status: 500 });
@@ -139,9 +150,25 @@ export default function Billing() {
   const { subscription, error } = useLoaderData();
   const actionData = useActionData();
   const navigation = useNavigation();
-  
+  const submit = useSubmit();
+
   const isSubmitting = navigation.state === "submitting";
-  
+
+  // Обработка редиректа на Shopify confirmation page
+  useEffect(() => {
+    if (actionData?.confirmationUrl) {
+      console.log("🔄 Redirecting to Shopify confirmation:", actionData.confirmationUrl);
+      window.open(actionData.confirmationUrl, "_top");
+    }
+  }, [actionData]);
+
+  const handleSubscribe = (planType) => {
+    console.log("🖱️ Button clicked, plan:", planType);
+    const formData = new FormData();
+    formData.append("planType", planType);
+    submit(formData, { method: "post" });
+  };
+
   return (
     <Page title="Billing - SheetPulse">
       <Layout>
@@ -190,40 +217,34 @@ export default function Billing() {
                 <Banner title="7-Day Free Trial" tone="info">
                   <p>Start your free trial today. No charges will be made until the trial ends.</p>
                 </Banner>
-                
+
                 <BlockStack gap="200">
                   <Text variant="headingXl">$4.99/month</Text>
                   <Text tone="subdued">Billed monthly. Cancel anytime.</Text>
                 </BlockStack>
-                
+
                 <BlockStack gap="300">
-                  <Form method="post">
-                    <input type="hidden" name="planType" value="trial" />
-                    <Button 
-                      variant="primary" 
-                      size="large" 
-                      submit
-                      loading={isSubmitting}
-                      disabled={isSubmitting}
-                    >
-                      Start Free Trial (Recommended)
-                    </Button>
-                  </Form>
-                  
-                  <Form method="post">
-                    <input type="hidden" name="planType" value="paid" />
-                    <Button 
-                      variant="secondary" 
-                      size="large" 
-                      submit
-                      loading={isSubmitting}
-                      disabled={isSubmitting}
-                    >
-                      Subscribe Now ($4.99/month)
-                    </Button>
-                  </Form>
+                  <Button
+                    variant="primary"
+                    size="large"
+                    onClick={() => handleSubscribe("trial")}
+                    loading={isSubmitting}
+                    disabled={isSubmitting}
+                  >
+                    Start Free Trial (Recommended)
+                  </Button>
+
+                  <Button
+                    variant="secondary"
+                    size="large"
+                    onClick={() => handleSubscribe("paid")}
+                    loading={isSubmitting}
+                    disabled={isSubmitting}
+                  >
+                    Subscribe Now ($4.99/month)
+                  </Button>
                 </BlockStack>
-                
+
                 <Text tone="subdued" variant="bodySm">
                   Click a button above to proceed with subscription. You will be redirected to Shopify to confirm.
                 </Text>
