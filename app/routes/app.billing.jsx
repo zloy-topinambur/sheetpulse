@@ -28,7 +28,6 @@ export const loader = async ({ request }) => {
     console.log("🔍 Проверка биллинга...");
     const billingCheck = await admin.billing.check({
       plans: [MONTHLY_PLAN],
-      isTest: true,
     });
     console.log("✅ Billing check result:", billingCheck);
     
@@ -88,14 +87,12 @@ export const action = async ({ request }) => {
       console.log("📊 Creating subscription with trial...");
       billingResponse = await admin.billing.request({
         plan: MONTHLY_PLAN,
-        isTest: true,
         returnUrl,
       });
     } else if (planType === "paid") {
       console.log("📊 Creating subscription without trial...");
       billingResponse = await admin.billing.request({
         plan: MONTHLY_PLAN,
-        isTest: true,
         trialDays: 0,
         returnUrl,
       });
