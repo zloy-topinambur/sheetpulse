@@ -5,9 +5,23 @@ import { authenticate } from "../shopify.server";
 
 // Проверка текущей подписки
 export const loader = async ({ request }) => {
-  const { admin } = await authenticate.admin(request);
+  console.log("🔍 Billing loader started");
 
   try {
+    const auth = await authenticate.admin(request);
+
+    // КРИТИЧНО: Проверка на undefined
+    if (!auth || !auth.admin || !auth.session) {
+      console.error("❌ Auth failed in billing loader");
+      // Редирект на OAuth если нет сессии
+      const url = new URL(request.url);
+      const shop = url.searchParams.get('shop');
+      return redirect(`/auth?shop=${shop}`);
+    }
+
+    const { admin, session } = auth;
+    console.log("✅ Billing auth success:", session.shop);
+
     const response = await admin.graphql(
       `#graphql
       query {
@@ -35,17 +49,17 @@ export const loader = async ({ request }) => {
 
     return json({
       subscription,
-      shop: admin.session.shop || "unknown",
+      shop: session.shop,
       requiresAuth: false
     });
-    
+
   } catch (error) {
-    console.error("❌ Billing check error:", error);
-    return json({ 
-      subscription: null, 
+    console.error("❌ Billing loader error:", error);
+    return json({
+      subscription: null,
       error: error.message,
-      shop: admin.session.shop || "unknown"
-    });
+      shop: "unknown"
+    }, { status: 500 });
   }
 };
 

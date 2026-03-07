@@ -1,41 +1,13 @@
-import { Link, Outlet, useLoaderData, useRouteError, redirect } from "@remix-run/react";
+import { Link, Outlet, useLoaderData, useRouteError } from "@remix-run/react";
 import { boundary } from "@shopify/shopify-app-remix/server";
 import { authenticate } from "../shopify.server";
 
 export const loader = async ({ request }) => {
   try {
     console.log("🔍 Проверка аутентификации в /app...");
-    const { admin } = await authenticate.admin(request);
+    await authenticate.admin(request);
     console.log("✅ Аутентификация успешна в /app");
-
-    // Проверка активной подписки
-    const response = await admin.graphql(
-      `#graphql
-      query {
-        currentAppInstallation {
-          activeSubscriptions {
-            id
-            name
-            status
-            test
-            trialDays
-            currentPeriodEnd
-          }
-        }
-      }`
-    );
-
-    const data = await response.json();
-    const subscription = data.data.currentAppInstallation.activeSubscriptions[0] || null;
-
-    // Если нет активной подписки или trial истек, перенаправить на биллинг
-    if (!subscription || (subscription.status !== 'ACTIVE' && subscription.trialDays <= 0)) {
-      console.log("⚠️ Нет активной подписки, перенаправляем на /app/billing");
-      return redirect("/app/billing");
-    }
-
-    console.log("✅ Подписка активна:", subscription.status);
-    return { subscription };
+    return {};
   } catch (error) {
     console.log("⚠️ Auth error in /app:", error.message);
     throw error;

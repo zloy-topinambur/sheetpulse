@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { json, redirect } from "@remix-run/node";
-import { useLoaderData, useSubmit, useNavigation, useActionData } from "@remix-run/react";
-import { 
-  Page, Layout, Card, Text, TextField, Button, BlockStack, Box, 
+import { useLoaderData, useSubmit, useNavigation, useActionData, useNavigate } from "@remix-run/react";
+import {
+  Page, Layout, Card, Text, TextField, Button, BlockStack, Box,
   Banner, Select, Checkbox, InlineStack, Badge, Divider, List
 } from "@shopify/polaris";
 import { authenticate } from "../shopify.server";
@@ -13,7 +13,7 @@ export const loader = async ({ request }) => {
 
   // Проверяем подписку
   let hasSubscription = false;
-  
+
   try {
     const billingCheck = await billing.check({
       plans: ["Monthly Subscription"],
@@ -24,21 +24,30 @@ export const loader = async ({ request }) => {
     console.log("Billing check error:", err.message);
   }
 
-  // Если нет подписки - редирект на страницу биллинга
-  if (!hasSubscription) {
-    return redirect("/app/billing");
-  }
-  
-  const billingStatus = { hasPayment: true, isTrial: false };
+  // Возвращаем флаг подписки, но НЕ делаем серверный редирект
+  // Клиентский редирект будет обработан в компоненте
+  const billingStatus = { hasPayment: hasSubscription, isTrial: false };
 
   // Если есть trial - тоже разрешаем доступ
-  const response = await admin.graphql(`
-    query { currentAppInstallation { metafields(first: 25, namespace: "sheet_pulse") { edges { node { key value } } } } }
-  `);
+  const response = await admin.graphql(
+    `#graphql
+    query {
+      currentAppInstallation {
+        metafields(first: 25, namespace: "sheet_pulse") {
+          edges {
+            node {
+              key
+              value
+            }
+          }
+        }
+      }
+    }`
+  );
   const resJson = await response.json();
   const fields = resJson.data?.currentAppInstallation?.metafields?.edges || [];
   const qRaw = fields.find(f => f.node.key === 'q_json')?.node.value;
-  
+
   return json({
     questions: qRaw ? JSON.parse(qRaw) : [{ id: Date.now(), type: 'emoji', label: 'How was your experience?' }],
     gUrl: fields.find(f => f.node.key === 'g_url')?.node.value || "",
@@ -51,7 +60,8 @@ export const loader = async ({ request }) => {
     widgetPosition: fields.find(f => f.node.key === 'w_pos')?.node.value || "right",
     shop: session.shop,
     billingStatus,
-    requiresAuth: false
+    requiresAuth: false,
+    hasSubscription // Добавляем флаг для клиентского редиректа
   });
 };
 
@@ -229,6 +239,15 @@ export default function Index() {
   const actionData = useActionData();
   const submit = useSubmit();
   const nav = useNavigation();
+  const navigate = useNavigate();
+
+  // Клиентский редирект при отсутствии подписки
+  useEffect(() => {
+    if (!settings.hasSubscription) {
+      console.log("⚠️ No subscription, redirecting to billing...");
+      navigate("/app/billing");
+    }
+  }, [settings.hasSubscription, navigate]);
 
   const [questions, setQuestions] = useState(settings.questions);
   const [aCol, setACol] = useState(settings.aCol);
@@ -236,7 +255,7 @@ export default function Index() {
   const [status, setStatus] = useState(settings.status);
   const [tType, setTType] = useState(settings.tType);
   const [tVal, setTVal] = useState(settings.tVal);
-  const [tDev, setTDev] = useState(settings.tDev); 
+  const [tDev, setTDev] = useState(settings.tDev);
   const [lang, setLang] = useState(settings.lang);
   const [wPos, setWPos] = useState(settings.widgetPosition);
 
