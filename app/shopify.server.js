@@ -45,6 +45,12 @@ const shopify = shopifyApp({
       replacementBehavior: 'APPLY_IMMEDIATELY',
     },
   },
+  hooks: {
+    afterAuth: async ({ session }) => {
+      console.log("✅ Аутентификация успешна для магазина:", session.shop);
+      shopify.registerWebhooks({ session });
+    },
+  },
 
   webhooks: {
     APP_UNINSTALLED: {

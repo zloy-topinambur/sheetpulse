@@ -89,7 +89,7 @@ export const action = async ({ request }) => {
         variables: {
           name: "Monthly Subscription",
           returnUrl: returnUrl,
-          test: true, // Для тестирования без реальных платежей
+          test: process.env.NODE_ENV === 'development', // Тестовый режим только для разработки
           lineItems: [
             {
               plan: {
