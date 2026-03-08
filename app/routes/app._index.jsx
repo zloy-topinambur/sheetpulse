@@ -142,25 +142,51 @@ export const action = async ({ request }) => {
     } catch (e) { return json({ testOk: false }); }
   }
 
-  const appRes = await admin.graphql(`{currentAppInstallation{id}}`);
-  const appId = (await appRes.json()).data.currentAppInstallation.id;
-  const data = Object.fromEntries(formData);
+  try {
+    const appRes = await admin.graphql(`{currentAppInstallation{id}}`);
+    const appId = (await appRes.json()).data.currentAppInstallation.id;
+    const data = Object.fromEntries(formData);
 
-  const m = [
-    { namespace: "sheet_pulse", key: "q_json", type: "json", value: data.q, ownerId: appId },
-    { namespace: "sheet_pulse", key: "g_url", type: "single_line_text_field", value: data.gurl, ownerId: appId },
-    { namespace: "sheet_pulse", key: "t_type", type: "single_line_text_field", value: data.ttype, ownerId: appId },
-    { namespace: "sheet_pulse", key: "t_val", type: "single_line_text_field", value: data.tval, ownerId: appId },
-    { namespace: "sheet_pulse", key: "t_dev", type: "single_line_text_field", value: data.tdev, ownerId: appId },
-    { namespace: "sheet_pulse", key: "a_col", type: "single_line_text_field", value: data.acol, ownerId: appId },
-    { namespace: "sheet_pulse", key: "lang", type: "single_line_text_field", value: data.lang, ownerId: appId },
-    { namespace: "sheet_pulse", key: "status", type: "single_line_text_field", value: data.status, ownerId: appId },
-    { namespace: "sheet_pulse", key: "w_pos", type: "single_line_text_field", value: data.wpos, ownerId: appId },
-    { namespace: "sheet_pulse", key: "survey_version", type: "single_line_text_field", value: data.q ? JSON.parse(data.q)[0]?.id || Date.now().toString() : Date.now().toString(), ownerId: appId }
-  ];
+    // Log received data for debugging
+    console.log("📝 Received form data:", {
+      q: data.q?.substring(0, 100) + "...",
+      gurl: data.gurl?.substring(0, 50),
+      status: data.status
+    });
 
-  await admin.graphql(`mutation save($m:[MetafieldsSetInput!]!){metafieldsSet(metafields:$m){metafields{key}}}`, { variables: { m } });
-  return json({ saved: true });
+    const m = [
+      { namespace: "sheet_pulse", key: "q_json", type: "json", value: data.q, ownerId: appId },
+      { namespace: "sheet_pulse", key: "g_url", type: "single_line_text_field", value: data.gurl, ownerId: appId },
+      { namespace: "sheet_pulse", key: "t_type", type: "single_line_text_field", value: data.ttype, ownerId: appId },
+      { namespace: "sheet_pulse", key: "t_val", type: "single_line_text_field", value: data.tval, ownerId: appId },
+      { namespace: "sheet_pulse", key: "t_dev", type: "single_line_text_field", value: data.tdev, ownerId: appId },
+      { namespace: "sheet_pulse", key: "a_col", type: "single_line_text_field", value: data.acol, ownerId: appId },
+      { namespace: "sheet_pulse", key: "lang", type: "single_line_text_field", value: data.lang, ownerId: appId },
+      { namespace: "sheet_pulse", key: "status", type: "single_line_text_field", value: data.status, ownerId: appId },
+      { namespace: "sheet_pulse", key: "w_pos", type: "single_line_text_field", value: data.wpos, ownerId: appId },
+      { namespace: "sheet_pulse", key: "survey_version", type: "single_line_text_field", value: data.q ? JSON.parse(data.q)[0]?.id || Date.now().toString() : Date.now().toString(), ownerId: appId }
+    ];
+
+    console.log("📤 Sending metafields:", m);
+
+    const result = await admin.graphql(`mutation save($m:[MetafieldsSetInput!]!){metafieldsSet(metafields:$m){metafields{key}}}`, { variables: { m } });
+    const resultData = await result.json();
+
+    console.log("✅ Metafields update result:", resultData);
+
+    if (resultData.errors) {
+      console.error("❌ GraphQL errors:", resultData.errors);
+      throw new Error(`GraphQL errors: ${JSON.stringify(resultData.errors)}`);
+    }
+
+    return json({ saved: true });
+  } catch (error) {
+    console.error("❌ Action error:", error);
+    return json(
+      { error: error.message },
+      { status: 500 }
+    );
+  }
 };
 
 function Preview({ questions, color, lang }) {
