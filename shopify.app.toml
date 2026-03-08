@@ -32,6 +32,14 @@ api_version = "2026-04"
 # Learn more: https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
 scopes = "read_customers,write_customers,read_orders,read_products,write_products,write_script_tags"
 
+[extensions]
+path = "extensions"
+
+  [[extensions.theme]]
+  id = "survey-widget"
+  title = "SheetPulse Survey Widget"
+  type = "theme"
+
 [auth]
 # Redirect URLs for OAuth flow
 # Must match the URLs configured in Shopify Partner Dashboard
