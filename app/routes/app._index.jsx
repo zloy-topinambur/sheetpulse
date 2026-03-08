@@ -143,28 +143,52 @@ export const action = async ({ request }) => {
   }
 
   try {
-    const appRes = await admin.graphql(`{currentAppInstallation{id}}`);
-    const appId = (await appRes.json()).data.currentAppInstallation.id;
-    const data = Object.fromEntries(formData);
+    console.log("🔧 Starting action handler");
 
-    // Log received data for debugging
-    console.log("📝 Received form data:", {
-      q: data.q?.substring(0, 100) + "...",
-      gurl: data.gurl?.substring(0, 50),
-      status: data.status
-    });
+    const appRes = await admin.graphql(`{currentAppInstallation{id}}`);
+    const appResData = await appRes.json();
+    console.log("📋 App installation response:", appResData);
+
+    if (appResData.errors) {
+      console.error("❌ App installation query errors:", appResData.errors);
+      throw new Error(`App installation query failed: ${JSON.stringify(appResData.errors)}`);
+    }
+
+    const appId = appResData.data.currentAppInstallation.id;
+    console.log("✅ Got app ID:", appId);
+
+    const data = Object.fromEntries(formData);
+    console.log("📝 Full form data:", data);
+
+    // Validate required fields
+    if (!data.q) {
+      throw new Error("Questions data is missing");
+    }
+
+    // Parse and validate questions
+    let questions;
+    try {
+      questions = JSON.parse(data.q);
+      console.log("✅ Parsed questions:", questions);
+      if (!Array.isArray(questions) || questions.length === 0) {
+        throw new Error("Questions must be a non-empty array");
+      }
+    } catch (e) {
+      console.error("❌ Failed to parse questions:", e, "Raw data:", data.q);
+      throw new Error(`Invalid questions format: ${e.message}`);
+    }
 
     const m = [
       { namespace: "sheet_pulse", key: "q_json", type: "json", value: data.q, ownerId: appId },
-      { namespace: "sheet_pulse", key: "g_url", type: "single_line_text_field", value: data.gurl, ownerId: appId },
-      { namespace: "sheet_pulse", key: "t_type", type: "single_line_text_field", value: data.ttype, ownerId: appId },
-      { namespace: "sheet_pulse", key: "t_val", type: "single_line_text_field", value: data.tval, ownerId: appId },
-      { namespace: "sheet_pulse", key: "t_dev", type: "single_line_text_field", value: data.tdev, ownerId: appId },
-      { namespace: "sheet_pulse", key: "a_col", type: "single_line_text_field", value: data.acol, ownerId: appId },
-      { namespace: "sheet_pulse", key: "lang", type: "single_line_text_field", value: data.lang, ownerId: appId },
-      { namespace: "sheet_pulse", key: "status", type: "single_line_text_field", value: data.status, ownerId: appId },
-      { namespace: "sheet_pulse", key: "w_pos", type: "single_line_text_field", value: data.wpos, ownerId: appId },
-      { namespace: "sheet_pulse", key: "survey_version", type: "single_line_text_field", value: data.q ? JSON.parse(data.q)[0]?.id || Date.now().toString() : Date.now().toString(), ownerId: appId }
+      { namespace: "sheet_pulse", key: "g_url", type: "single_line_text_field", value: data.gurl || "", ownerId: appId },
+      { namespace: "sheet_pulse", key: "t_type", type: "single_line_text_field", value: data.ttype || "timer", ownerId: appId },
+      { namespace: "sheet_pulse", key: "t_val", type: "single_line_text_field", value: data.tval || "3", ownerId: appId },
+      { namespace: "sheet_pulse", key: "t_dev", type: "single_line_text_field", value: data.tdev || "all", ownerId: appId },
+      { namespace: "sheet_pulse", key: "a_col", type: "single_line_text_field", value: data.acol || "#008060", ownerId: appId },
+      { namespace: "sheet_pulse", key: "lang", type: "single_line_text_field", value: data.lang || "en", ownerId: appId },
+      { namespace: "sheet_pulse", key: "status", type: "single_line_text_field", value: data.status || "active", ownerId: appId },
+      { namespace: "sheet_pulse", key: "w_pos", type: "single_line_text_field", value: data.wpos || "right", ownerId: appId },
+      { namespace: "sheet_pulse", key: "survey_version", type: "single_line_text_field", value: questions[0]?.id || Date.now().toString(), ownerId: appId }
     ];
 
     console.log("📤 Sending metafields:", m);
@@ -182,8 +206,9 @@ export const action = async ({ request }) => {
     return json({ saved: true });
   } catch (error) {
     console.error("❌ Action error:", error);
+    console.error("❌ Stack trace:", error.stack);
     return json(
-      { error: error.message },
+      { error: error.message, details: error.toString() },
       { status: 500 }
     );
   }
