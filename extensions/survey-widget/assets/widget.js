@@ -1,8 +1,28 @@
 (function() {
+  // Debug logging
+  console.log('SheetPulse: Initializing widget', {
+    questions: window.SheetPulse.questions,
+    googleUrl: window.SheetPulse.googleUrl,
+    triggerType: window.SheetPulse.triggerType,
+    status: window.SheetPulse.status,
+    surveyVersion: window.SheetPulse.surveyVersion
+  });
+
   const { questions, googleUrl, triggerType, tVal, targetDevice, accentColor, lang, status, surveyVersion, widgetPosition } = window.SheetPulse;
-  
-  if (status !== 'active') return;
-  if (!questions?.length || !googleUrl) return;
+
+  // Early exit conditions
+  if (status !== 'active') {
+    console.log('SheetPulse: Survey status is not active, exiting');
+    return;
+  }
+  if (!questions?.length) {
+    console.log('SheetPulse: No questions found, exiting');
+    return;
+  }
+  if (!googleUrl) {
+    console.log('SheetPulse: No Google URL configured, exiting');
+    return;
+  }
 
   const isPreview = window.location.search.includes('preview=1');
   const surveyId = questions[0]?.id || 'default';
@@ -11,18 +31,36 @@
   const versionKey = `sp_version_${surveyId}`;
   const currentVersion = surveyVersion || questions[0]?.id;
 
+  console.log('SheetPulse: Survey config', {
+    surveyId,
+    currentVersion,
+    isPreview,
+    doneKey,
+    closedKey,
+    versionKey
+  });
+
   const storedVersion = localStorage.getItem(versionKey);
   if (!isPreview && storedVersion !== currentVersion) {
+    console.log('SheetPulse: Version changed, resetting survey state');
     localStorage.removeItem(doneKey);
     localStorage.removeItem(closedKey);
     localStorage.setItem(versionKey, currentVersion);
   }
-  
-  if (!isPreview && (localStorage.getItem(doneKey) || localStorage.getItem(closedKey))) return;
+
+  if (!isPreview && (localStorage.getItem(doneKey) || localStorage.getItem(closedKey))) {
+    console.log('SheetPulse: Survey already completed or closed, exiting');
+    return;
+  }
 
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
   const currentDevice = isMobile ? 'mobile' : 'desktop';
-  if (targetDevice !== 'all' && targetDevice !== currentDevice) return;
+  if (targetDevice !== 'all' && targetDevice !== currentDevice) {
+    console.log('SheetPulse: Device filter active, current device:', currentDevice, 'target:', targetDevice);
+    return;
+  }
+
+  console.log('SheetPulse: All checks passed, initializing survey');
 
   let respondentId = sessionStorage.getItem('sp_uid') || 'SP-' + Math.random().toString(36).substr(2, 9).toUpperCase();
   sessionStorage.setItem('sp_uid', respondentId);
@@ -268,9 +306,9 @@
 
   // Create container with inline styles for position
   const container = document.createElement('div');
-  container.id = 'sp-widget'; 
+  container.id = 'sp-widget';
   container.className = 'sp-hidden';
-  
+
   // Apply position directly via inline styles
   if (widgetPos === 'left') {
     container.style.left = '20px';
@@ -279,21 +317,55 @@
     container.style.right = '20px';
     container.style.left = 'auto';
   }
-  
+
   container.innerHTML = '<div id="sp-card" class="sp-card"></div>';
   document.body.appendChild(container);
-  
+
   render();
 
-  if (triggerType === 'purchase' && window.location.pathname.includes('/thank_you')) show();
+  console.log('SheetPulse: Setting up trigger -', triggerType);
+
+  if (triggerType === 'purchase' && window.location.pathname.includes('/thank_you')) {
+    console.log('SheetPulse: Purchase trigger - showing survey');
+    show();
+  }
   else if (triggerType === 'exit') {
-     document.addEventListener('mouseleave', (e) => e.clientY <= 0 && show());
-     let lastS = 0; window.addEventListener('scroll', () => {
-       let st = window.pageYOffset; if (st < lastS && lastS - st > 40 && st > 100) show(); lastS = st;
-     });
+    console.log('SheetPulse: Exit trigger - setting up event listeners');
+    document.addEventListener('mouseleave', (e) => {
+      if (e.clientY <= 0) {
+        console.log('SheetPulse: Exit detected, showing survey');
+        show();
+      }
+    });
+    let lastS = 0;
+    window.addEventListener('scroll', () => {
+      let st = window.pageYOffset;
+      if (st < lastS && lastS - st > 40 && st > 100) {
+        console.log('SheetPulse: Fast scroll up detected, showing survey');
+        show();
+      }
+      lastS = st;
+    });
   } else if (triggerType === 'cart') {
+    console.log('SheetPulse: Cart trigger - checking cart every 3 seconds');
     setInterval(async () => {
-      try { const r = await fetch('/cart.js'); const cart = await r.json(); if (cart.item_count >= parseInt(tVal)) show(); } catch(e) {}
+      try {
+        const r = await fetch('/cart.js');
+        const cart = await r.json();
+        console.log('SheetPulse: Cart check - items:', cart.item_count, 'threshold:', parseInt(tVal));
+        if (cart.item_count >= parseInt(tVal)) {
+          console.log('SheetPulse: Cart threshold reached, showing survey');
+          show();
+        }
+      } catch(e) {
+        console.error('SheetPulse: Cart check error:', e);
+      }
     }, 3000);
-  } else { setTimeout(show, parseInt(tVal)*1000); }
+  } else {
+    console.log('SheetPulse: Timer trigger - showing after', tVal, 'seconds');
+    setTimeout(() => {
+      console.log('SheetPulse: Timer expired, showing survey');
+      show();
+    }, parseInt(tVal)*1000);
+  }
 })();
