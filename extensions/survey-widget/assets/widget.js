@@ -60,6 +60,15 @@
     }
   };
 
+  // Add function to reset survey from admin panel
+  if (window.location.hash === '#reset') {
+    localStorage.removeItem(doneKey);
+    localStorage.removeItem(closedKey);
+    localStorage.removeItem(versionKey);
+    window.location.hash = '';
+    alert('Survey has been reset! All visitors can now take it again.');
+  }
+
   const updateNextButton = () => {
     const btn = document.getElementById('sp-next');
     if(!btn) return;

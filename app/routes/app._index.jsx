@@ -155,7 +155,8 @@ export const action = async ({ request }) => {
     { namespace: "sheet_pulse", key: "a_col", type: "single_line_text_field", value: data.acol, ownerId: appId },
     { namespace: "sheet_pulse", key: "lang", type: "single_line_text_field", value: data.lang, ownerId: appId },
     { namespace: "sheet_pulse", key: "status", type: "single_line_text_field", value: data.status, ownerId: appId },
-    { namespace: "sheet_pulse", key: "w_pos", type: "single_line_text_field", value: data.wpos, ownerId: appId }
+    { namespace: "sheet_pulse", key: "w_pos", type: "single_line_text_field", value: data.wpos, ownerId: appId },
+    { namespace: "sheet_pulse", key: "survey_version", type: "single_line_text_field", value: data.q ? JSON.parse(data.q)[0]?.id || Date.now().toString() : Date.now().toString(), ownerId: appId }
   ];
 
   await admin.graphql(`mutation save($m:[MetafieldsSetInput!]!){metafieldsSet(metafields:$m){metafields{key}}}`, { variables: { m } });
@@ -399,6 +400,25 @@ export default function Index() {
                   <Button variant="primary" onClick={() => {setStatus('active'); save('active')}} disabled={status === 'active'}>Launch on Site</Button>
                 </InlineStack>
               </InlineStack>
+            </Card>
+
+            <Card>
+              <BlockStack gap="400">
+                <Text variant="headingMd">🔄 Reset Survey</Text>
+                <Text tone="subdued">Reset the survey to allow users to take it again. This will clear the "already completed" status for all visitors.</Text>
+                <Button variant="primary" onClick={() => {
+                  if (confirm('Are you sure you want to reset the survey? This will allow all visitors to take it again.')) {
+                    // Clear localStorage for the current survey
+                    const surveyId = questions[0]?.id || 'default';
+                    localStorage.removeItem(`sp_done_${surveyId}`);
+                    localStorage.removeItem(`sp_closed_${surveyId}`);
+                    localStorage.removeItem(`sp_version_${surveyId}`);
+                    alert('Survey has been reset! All visitors can now take the survey again.');
+                  }
+                }}>
+                  Reset Survey
+                </Button>
+              </BlockStack>
             </Card>
 
             {questions.map((q, idx) => (
