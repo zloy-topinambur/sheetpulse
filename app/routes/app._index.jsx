@@ -401,7 +401,21 @@ export default function Index() {
         wpos: wPos
       }
     });
-    submit({ q: JSON.stringify(questions), gurl: gUrl, ttype: tType, tval: tVal, tdev: tDev, acol: aCol, lang, status: s || status, wpos: wPos }, { method: "POST" });
+
+    // Add event listener to track response
+    const originalSubmit = submit;
+    const trackedSubmit = (formData, options) => {
+      console.log("📤 Submitting form data:", Object.fromEntries(formData));
+      const promise = originalSubmit(formData, options);
+      promise.then(response => {
+        console.log("✅ Response received:", response);
+      }).catch(error => {
+        console.error("❌ Submission error:", error);
+      });
+      return promise;
+    };
+
+    trackedSubmit({ q: JSON.stringify(questions), gurl: gUrl, ttype: tType, tval: tVal, tdev: tDev, acol: aCol, lang, status: s || status, wpos: wPos }, { method: "POST" });
   };
 
   const bridgeCode = `function doPost(e) { try { var ss = SpreadsheetApp.getActiveSpreadsheet(); var sheet = ss.getSheets()[0]; var postData = e.postData.contents; if (!postData) return ContentService.createTextOutput(JSON.stringify({"error": "No data"})).setMimeType(ContentService.MimeType.JSON); var data = JSON.parse(postData); var answers = data.answer; if (typeof answers === 'string') { try { answers = JSON.parse(answers); } catch(e) { answers = {"Answer": answers }; } } if (sheet.getLastRow() === 0) { var headers = ["Date", "Respondent ID", "Device", "Language", "Page URL"]; Object.keys(answers || {}).forEach(k => headers.push(k)); sheet.appendRow(headers); sheet.getRange(1,1,1,headers.length).setFontWeight("bold").setBackground("#f4f4f4"); } var row = [new Date(), data.respondentId||"Unknown", data.device||"Unknown", data.lang||"en", data.pageUrl||"Unknown"]; var h = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0]; for(var i=5;i<h.length;i++) row.push(answers?.[h[i]] || "-"); sheet.appendRow(row); return ContentService.createTextOutput(JSON.stringify({"result":"success"})).setMimeType(ContentService.MimeType.JSON); } catch(e) { return ContentService.createTextOutput(JSON.stringify({"error":e.toString()})).setMimeType(ContentService.MimeType.JSON); } }`;
