@@ -96,7 +96,7 @@
   const widgetPos = widgetPosition || 'right';
   
   // Debug: log widget position
-  console.log('SheetPulse: Widget position =', widgetPos, 'widgetPosition =', widgetPosition);
+  console.log('SheetPulse: Widget position =', widgetPos);
 
   const show = () => {
     const widget = document.getElementById('sp-widget');
@@ -320,9 +320,11 @@
   if (widgetPos === 'left') {
     container.style.left = '20px';
     container.style.right = 'auto';
+    container.style.bottom = '20px';
   } else {
     container.style.right = '20px';
     container.style.left = 'auto';
+    container.style.bottom = '20px';
   }
 
   container.innerHTML = '<div id="sp-card" class="sp-card"></div>';
