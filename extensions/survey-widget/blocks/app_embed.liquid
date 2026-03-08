@@ -1,15 +1,33 @@
-<div id="sheetpulse-widget-root" 
-     data-questions='{{ app.metafields.sheet_pulse.q_json | default: '[]' | json }}'
-     data-google-url="{{ app.metafields.sheet_pulse.g_url | default: '' }}"
-     data-trigger-type="{{ app.metafields.sheet_pulse.t_type | default: 'timer' }}"
-     data-trigger-value="{{ app.metafields.sheet_pulse.t_val | default: '3' }}"
-     data-target-device="{{ app.metafields.sheet_pulse.t_dev | default: 'all' }}"
-     data-accent-color="{{ app.metafields.sheet_pulse.a_col | default: '000000' }}"
-     data-lang="{{ app.metafields.sheet_pulse.lang | default: 'en' }}"
-     data-status="{{ app.metafields.sheet_pulse.status | default: 'active' }}"
-     data-survey-version="{{ app.metafields.sheet_pulse.survey_version | default: '' }}"
-     data-widget-position="{{ app.metafields.sheet_pulse.w_pos | default: 'right' }}">
-</div>
+<div id="sheetpulse-widget-root"></div>
+<script>
+  console.log("📋 SheetPulse metafields from Liquid:", {
+    q_json: {{ app.metafields.sheet_pulse.q_json | default: '[]' | json }},
+    g_url: "{{ app.metafields.sheet_pulse.g_url | default: '' }}",
+    t_type: "{{ app.metafields.sheet_pulse.t_type | default: 'timer' }}",
+    t_val: "{{ app.metafields.sheet_pulse.t_val | default: '3' }}",
+    t_dev: "{{ app.metafields.sheet_pulse.t_dev | default: 'all' }}",
+    a_col: "{{ app.metafields.sheet_pulse.a_col | default: '000000' }}",
+    lang: "{{ app.metafields.sheet_pulse.lang | default: 'en' }}",
+    status: "{{ app.metafields.sheet_pulse.status | default: 'active' }}",
+    survey_version: "{{ app.metafields.sheet_pulse.survey_version | default: '' }}",
+    w_pos: "{{ app.metafields.sheet_pulse.w_pos | default: 'right' }}"
+  });
+
+  window.SheetPulse = {
+    questions: {{ app.metafields.sheet_pulse.q_json | default: '[]' }},
+    googleUrl: "{{ app.metafields.sheet_pulse.g_url | default: '' }}",
+    triggerType: "{{ app.metafields.sheet_pulse.t_type | default: 'timer' }}",
+    tVal: "{{ app.metafields.sheet_pulse.t_val | default: '3' }}",
+    targetDevice: "{{ app.metafields.sheet_pulse.t_dev | default: 'all' }}",
+    accentColor: "{{ app.metafields.sheet_pulse.a_col | default: '000000' }}",
+    lang: "{{ app.metafields.sheet_pulse.lang | default: 'en' }}",
+    status: "{{ app.metafields.sheet_pulse.status | default: 'active' }}",
+    surveyVersion: "{{ app.metafields.sheet_pulse.survey_version | default: '' }}",
+    widgetPosition: "{{ app.metafields.sheet_pulse.w_pos | default: 'right' }}"
+  };
+
+  console.log("✅ SheetPulse initialized:", window.SheetPulse);
+</script>
 <script src="{{ 'widget.js' | asset_url }}" defer></script>
 <link rel="stylesheet" href="{{ 'widget.css' | asset_url }}">
 {% schema %}
