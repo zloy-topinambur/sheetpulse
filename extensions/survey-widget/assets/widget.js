@@ -1,28 +1,28 @@
 (function() {
   // Debug logging
-  console.log('SheetPulse: Initializing widget', {
-    questions: window.SheetPulse.questions,
-    googleUrl: window.SheetPulse.googleUrl,
-    triggerType: window.SheetPulse.triggerType,
-    status: window.SheetPulse.status,
-    surveyVersion: window.SheetPulse.surveyVersion
-  });
+  console.log('🎯 SheetPulse: Starting widget initialization');
+  console.log('📋 SheetPulse config:', window.SheetPulse);
 
   const { questions, googleUrl, triggerType, tVal, targetDevice, accentColor, lang, status, surveyVersion, widgetPosition } = window.SheetPulse;
 
-  // Early exit conditions
+  // Early exit conditions with detailed logging
   if (status !== 'active') {
-    console.log('SheetPulse: Survey status is not active, exiting');
+    console.log('❌ SheetPulse: Status is not active:', status);
     return;
   }
+  console.log('✅ SheetPulse: Status is active');
+
   if (!questions?.length) {
-    console.log('SheetPulse: No questions found, exiting');
+    console.log('❌ SheetPulse: No questions found:', questions);
     return;
   }
+  console.log('✅ SheetPulse: Questions found:', questions.length);
+
   if (!googleUrl) {
-    console.log('SheetPulse: No Google URL configured, exiting');
+    console.log('❌ SheetPulse: No Google URL configured');
     return;
   }
+  console.log('✅ SheetPulse: Google URL configured');
 
   const isPreview = window.location.search.includes('preview=1');
   const surveyId = questions[0]?.id || 'default';
