@@ -188,7 +188,7 @@ export const action = async ({ request }) => {
       { namespace: "sheet_pulse", key: "lang", type: "single_line_text_field", value: data.lang || "en", ownerId: appId },
       { namespace: "sheet_pulse", key: "status", type: "single_line_text_field", value: data.status || "active", ownerId: appId },
       { namespace: "sheet_pulse", key: "w_pos", type: "single_line_text_field", value: data.wpos || "right", ownerId: appId },
-      { namespace: "sheet_pulse", key: "survey_version", type: "single_line_text_field", value: questions[0]?.id || Date.now().toString(), ownerId: appId }
+      { namespace: "sheet_pulse", key: "survey_version", type: "single_line_text_field", value: String(questions[0]?.id || Date.now()), ownerId: appId }
     ];
 
     console.log("📤 Sending metafields:", m);
