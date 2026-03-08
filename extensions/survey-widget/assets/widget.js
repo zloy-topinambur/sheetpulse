@@ -93,10 +93,11 @@
   const selectedBg = isBlack ? '#333333' : theme;
 
   // Widget position: left or right (default right)
-  const widgetPos = widgetPosition || 'right';
+  const position = widgetPosition || 'right';
   
   // Debug: log widget position
-  console.log('SheetPulse: Widget position =', widgetPos);
+  console.log('🎯 SheetPulse: Widget position from config:', widgetPosition);
+  console.log('✅ SheetPulse: Final position used:', position);
 
   const show = () => {
     const widget = document.getElementById('sp-widget');
@@ -317,7 +318,7 @@
   container.className = 'sp-hidden';
 
   // Apply position directly via inline styles
-  if (widgetPos === 'left') {
+  if (position === 'left') {
     container.style.left = '20px';
     container.style.right = 'auto';
     container.style.bottom = '20px';
