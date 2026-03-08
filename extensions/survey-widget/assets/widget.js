@@ -3,6 +3,13 @@
   console.log('🎯 SheetPulse: Starting widget initialization');
   console.log('📋 SheetPulse config:', window.SheetPulse);
 
+  // Check if window.SheetPulse is defined
+  if (!window.SheetPulse) {
+    console.error('❌ SheetPulse: window.SheetPulse is not defined!');
+    console.error('❌ SheetPulse: Check if Liquid template is loading the config correctly');
+    return;
+  }
+
   const { questions, googleUrl, triggerType, tVal, targetDevice, accentColor, lang, status, surveyVersion, widgetPosition } = window.SheetPulse;
 
   // Early exit conditions with detailed logging
