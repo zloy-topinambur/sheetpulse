@@ -1,16 +1,44 @@
 (function() {
   // Debug logging
   console.log('🎯 SheetPulse: Starting widget initialization');
-  console.log('📋 SheetPulse config:', window.SheetPulse);
 
-  // Check if window.SheetPulse is defined
-  if (!window.SheetPulse) {
-    console.error('❌ SheetPulse: window.SheetPulse is not defined!');
-    console.error('❌ SheetPulse: Check if Liquid template is loading the config correctly');
+  // Get container element
+  const container = document.getElementById('sheetpulse-widget-root');
+  if (!container) {
+    console.error('❌ SheetPulse: Container element not found!');
     return;
   }
 
-  const { questions, googleUrl, triggerType, tVal, targetDevice, accentColor, lang, status, surveyVersion, widgetPosition } = window.SheetPulse;
+  // Read configuration from data attributes
+  const questions = JSON.parse(container.dataset.questions || '[]');
+  const googleUrl = container.dataset.googleUrl;
+  const triggerType = container.dataset.triggerType;
+  const tVal = container.dataset.triggerValue;
+  const targetDevice = container.dataset.targetDevice;
+  const accentColor = container.dataset.accentColor;
+  const lang = container.dataset.lang;
+  const status = container.dataset.status;
+  const surveyVersion = container.dataset.surveyVersion;
+  const widgetPosition = container.dataset.widgetPosition;
+
+  console.log('📋 SheetPulse config from data attributes:', {
+    questions,
+    googleUrl,
+    triggerType,
+    tVal,
+    targetDevice,
+    accentColor,
+    lang,
+    status,
+    surveyVersion,
+    widgetPosition
+  });
+
+  // Check if required data is present
+  if (!questions || !Array.isArray(questions)) {
+    console.error('❌ SheetPulse: Invalid questions data!');
+    return;
+  }
 
   // Early exit conditions with detailed logging
   if (status !== 'active') {
@@ -312,24 +340,24 @@
     setTimeout(() => document.getElementById('sp-widget').remove(), 3500);
   };
 
-  // Create container with inline styles for position
-  const container = document.createElement('div');
-  container.id = 'sp-widget';
-  container.className = 'sp-hidden';
+  // Create widget container with inline styles for position
+  const widgetContainer = document.createElement('div');
+  widgetContainer.id = 'sp-widget';
+  widgetContainer.className = 'sp-hidden';
 
   // Apply position directly via inline styles
   if (position === 'left') {
-    container.style.left = '20px';
-    container.style.right = 'auto';
-    container.style.bottom = '20px';
+    widgetContainer.style.left = '20px';
+    widgetContainer.style.right = 'auto';
+    widgetContainer.style.bottom = '20px';
   } else {
-    container.style.right = '20px';
-    container.style.left = 'auto';
-    container.style.bottom = '20px';
+    widgetContainer.style.right = '20px';
+    widgetContainer.style.left = 'auto';
+    widgetContainer.style.bottom = '20px';
   }
 
-  container.innerHTML = '<div id="sp-card" class="sp-card"></div>';
-  document.body.appendChild(container);
+  widgetContainer.innerHTML = '<div id="sp-card" class="sp-card"></div>';
+  document.body.appendChild(widgetContainer);
 
   render();
 
