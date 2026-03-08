@@ -107,6 +107,8 @@ export const loader = async ({ request }) => {
   const fields = resJson.data?.currentAppInstallation?.metafields?.edges || [];
   const qRaw = fields.find(f => f.node.key === 'q_json')?.node.value;
 
+  console.log("📋 Found metafields:", fields.map(f => ({ key: f.node.key, value: f.node.value })));
+
   return json({
     questions: qRaw ? JSON.parse(qRaw) : [{ id: Date.now(), type: 'emoji', label: 'How was your experience?' }],
     gUrl: fields.find(f => f.node.key === 'g_url')?.node.value || "",
@@ -117,13 +119,15 @@ export const loader = async ({ request }) => {
     lang: fields.find(f => f.node.key === 'lang')?.node.value || "en",
     status: fields.find(f => f.node.key === 'status')?.node.value || "active",
     widgetPosition: fields.find(f => f.node.key === 'w_pos')?.node.value || "right",
+    surveyVersion: fields.find(f => f.node.key === 'survey_version')?.node.value || "",
     shop: session.shop,
     billingStatus: { hasPayment: hasSubscription, isTrial: false },
     requiresAuth: false,
     hasSubscription, // Добавляем флаг для клиентского редиректа
     subscription, // Добавляем полную информацию о подписке
     isDevStore, // Флаг dev store
-    planName // Название плана
+    planName, // Название плана
+    allMetafields: fields.map(f => ({ key: f.node.key, value: f.node.value })) // Все метаполя для отладки
   });
 };
 
