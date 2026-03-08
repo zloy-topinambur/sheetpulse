@@ -388,7 +388,18 @@ export default function Index() {
     console.log("📤 Client-side save called with:", {
       questions: questions.length,
       gurl: gUrl,
-      status: s || status
+      status: s || status,
+      allData: {
+        q: JSON.stringify(questions),
+        gurl: gUrl,
+        ttype: tType,
+        tval: tVal,
+        tdev: tDev,
+        acol: aCol,
+        lang: lang,
+        status: s || status,
+        wpos: wPos
+      }
     });
     submit({ q: JSON.stringify(questions), gurl: gUrl, ttype: tType, tval: tVal, tdev: tDev, acol: aCol, lang, status: s || status, wpos: wPos }, { method: "POST" });
   };
