@@ -100,9 +100,14 @@
   console.log('✅ SheetPulse: Final position used:', position);
 
   const show = () => {
+    console.log('🎯 SheetPulse: show() called');
     const widget = document.getElementById('sp-widget');
     if (widget) {
+      console.log('✅ SheetPulse: Found widget element, removing sp-hidden class');
       widget.classList.remove('sp-hidden');
+      console.log('✅ SheetPulse: Widget should now be visible');
+    } else {
+      console.error('❌ SheetPulse: Widget element not found!');
     }
   };
 
@@ -330,6 +335,11 @@
 
   widgetContainer.innerHTML = '<div id="sp-card" class="sp-card"></div>';
   document.body.appendChild(widgetContainer);
+  
+  console.log('✅ SheetPulse: Widget container created and appended to DOM');
+  console.log('✅ SheetPulse: Container position:', position);
+  console.log('✅ SheetPulse: Container ID:', widgetContainer.id);
+  console.log('✅ SheetPulse: Container class:', widgetContainer.className);
 
   render();
 
@@ -373,6 +383,7 @@
     }, 3000);
   } else {
     console.log('SheetPulse: Timer trigger - showing after', tVal, 'seconds');
+    console.log('SheetPulse: Calculated timeout:', parseInt(tVal)*1000, 'ms');
     setTimeout(() => {
       console.log('SheetPulse: Timer expired, showing survey');
       show();
