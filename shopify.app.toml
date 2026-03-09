@@ -30,7 +30,7 @@ api_version = "2026-04"
 [access_scopes]
 # Scopes required by your app
 # Learn more: https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "read_customers,write_customers,read_orders,read_products,write_products,write_script_tags"
+scopes = "write_themes,read_themes,write_content,read_content,read_customers,write_customers,read_orders,read_products,write_products,write_script_tags"
 
 [extensions]
 path = "extensions"
