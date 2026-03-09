@@ -11,3 +11,4 @@ path = "assets/*"
 
 [[extensions.files]]
 path = "blocks/*.liquid"
+path = "snippets/*.liquid"
