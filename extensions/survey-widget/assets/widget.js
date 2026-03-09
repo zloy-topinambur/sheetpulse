@@ -25,11 +25,12 @@
   }
   console.log('✅ SheetPulse: Questions found:', questions.length);
 
-  if (!googleUrl) {
-    console.log('❌ SheetPulse: No Google URL configured');
-    return;
+  const hasGoogleUrl = Boolean(googleUrl && String(googleUrl).trim());
+  if (!hasGoogleUrl) {
+    console.warn('⚠️ SheetPulse: Google URL is empty. Survey will still be shown, but answers will not be sent.');
+  } else {
+    console.log('✅ SheetPulse: Google URL configured');
   }
-  console.log('✅ SheetPulse: Google URL configured');
 
   const isPreview = window.location.search.includes('preview=1');
   const surveyId = questions[0]?.id || 'default';
@@ -56,7 +57,10 @@
   }
 
   if (!isPreview && (localStorage.getItem(doneKey) || localStorage.getItem(closedKey))) {
-    console.log('SheetPulse: Survey already completed or closed, exiting');
+    console.log('SheetPulse: Survey already completed or closed, exiting', {
+      done: localStorage.getItem(doneKey),
+      closed: localStorage.getItem(closedKey)
+    });
     return;
   }
 
@@ -305,12 +309,16 @@
 
   const finish = async () => {
     document.getElementById('sp-card').innerHTML = `<p class="sp-thanks">${i18n.thanks}</p>`;
-    if (!isPreview) {
+    if (!isPreview && hasGoogleUrl) {
       try {
         await fetch(googleUrl, { method: 'POST', mode: 'no-cors',
           body: JSON.stringify({ respondentId, device: currentDevice, lang: lang, answer: JSON.stringify(answers), pageUrl: window.location.href })
         });
-      } catch (e) {}
+      } catch (e) {
+        console.error('SheetPulse: Failed to send answers to Google URL', e);
+      }
+    } else if (!isPreview) {
+      console.warn('SheetPulse: Skip sending answers because Google URL is not configured');
     }
     localStorage.setItem(doneKey, 'true');
     localStorage.setItem(versionKey, currentVersion);
