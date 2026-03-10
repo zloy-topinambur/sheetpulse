@@ -219,10 +219,8 @@
            selected = [v];
            container.querySelectorAll('.sp-e-btn').forEach(el => {
              el.classList.remove('is-s');
-             el.style.transform = 'scale(1)';
            });
            b.classList.add('is-s');
-           b.style.transform = 'scale(1.3)';
         } else if (q.type === 'scale') {
            selected = [v];
            container.querySelectorAll('.sp-sc-b').forEach(el => {
