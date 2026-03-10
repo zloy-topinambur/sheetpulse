@@ -215,7 +215,7 @@
            if(check) {
              check.style.opacity = b.classList.contains('is-s') ? '1' : '0';
            }
-        } else if (q.type === 'emoji') {
+        } else if (q.type.includes('emoji')) {
            selected = [v];
            container.querySelectorAll('.sp-e-btn').forEach(el => {
              el.classList.remove('is-s');
