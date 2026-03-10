@@ -117,9 +117,15 @@
 
   // Add function to reset survey from admin panel
   if (window.location.hash === '#reset') {
-    localStorage.removeItem(doneKey);
-    localStorage.removeItem(closedKey);
-    localStorage.removeItem(versionKey);
+    // Remove all survey-related keys from localStorage
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.startsWith('sp_done_') || key.startsWith('sp_closed_') || key.startsWith('sp_version_'))) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(key => localStorage.removeItem(key));
     window.location.hash = '';
     alert('Survey has been reset! All visitors can now take it again.');
   }
@@ -217,10 +223,12 @@
            }
         } else if (b.classList.contains('sp-e-btn')) {
            selected = [v];
+           // Сбрасываем состояние всех эмодзи
            container.querySelectorAll('.sp-e-btn').forEach(el => {
              el.classList.remove('is-s');
              el.style.transform = '';
            });
+           // Устанавливаем состояние выбранного эмодзи
            b.classList.add('is-s');
         } else if (q.type === 'scale') {
            selected = [v];
