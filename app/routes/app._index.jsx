@@ -136,6 +136,44 @@ export const action = async ({ request }) => {
   const formData = await request.formData();
   const intent = formData.get("intent");
 
+  if (intent === "reset_survey") {
+    try {
+      const appRes = await admin.graphql(`{currentAppInstallation{id}}`);
+      const appResData = await appRes.json();
+      if (appResData.errors) {
+        throw new Error(`App installation query failed: ${JSON.stringify(appResData.errors)}`);
+      }
+      const appId = appResData.data.currentAppInstallation.id;
+      const newVersion = String(Date.now());
+
+      const result = await admin.graphql(
+        `mutation reset($m:[MetafieldsSetInput!]!){metafieldsSet(metafields:$m){metafields{key}}}`,
+        {
+          variables: {
+            m: [
+              {
+                namespace: "sheet_pulse",
+                key: "survey_version",
+                type: "single_line_text_field",
+                value: newVersion,
+                ownerId: appId
+              }
+            ]
+          }
+        }
+      );
+      const resultData = await result.json();
+      if (resultData.errors) {
+        throw new Error(`GraphQL errors: ${JSON.stringify(resultData.errors)}`);
+      }
+
+      return json({ resetOk: true, surveyVersion: newVersion });
+    } catch (e) {
+      console.error("❌ Reset survey error:", e);
+      return json({ resetOk: false, error: e.message }, { status: 500 });
+    }
+  }
+
   if (intent === "test_connection") {
     try {
       const res = await fetch(formData.get("gurl"), {
@@ -387,6 +425,14 @@ export default function Index() {
   const [lang, setLang] = useState(settings.lang);
   const [wPos, setWPos] = useState(settings.widgetPosition);
 
+  useEffect(() => {
+    if (actionData?.resetOk) {
+      alert('Survey has been reset! All visitors can now take the survey again.');
+    } else if (actionData?.resetOk === false) {
+      alert(`Reset failed: ${actionData?.error || 'Unknown error'}`);
+    }
+  }, [actionData?.resetOk, actionData?.error]);
+
   const move = (idx, dir) => { const newQ = [...questions]; const [item] = newQ.splice(idx, 1); newQ.splice(idx + dir, 0, item); setQuestions(newQ); };
   const save = (s) => submit({ q: JSON.stringify(questions), gurl: gUrl, ttype: tType, tval: tVal, tdev: tDev, acol: aCol, lang, status: s || status, wpos: wPos }, { method: "POST" });
 
@@ -463,12 +509,7 @@ export default function Index() {
                 <Text tone="subdued">Reset the survey to allow users to take it again. This will clear the "already completed" status for all visitors.</Text>
                 <Button variant="primary" onClick={() => {
                   if (confirm('Are you sure you want to reset the survey? This will allow all visitors to take it again.')) {
-                    // Clear localStorage for the current survey
-                    const surveyId = questions[0]?.id || 'default';
-                    localStorage.removeItem(`sp_done_${surveyId}`);
-                    localStorage.removeItem(`sp_closed_${surveyId}`);
-                    localStorage.removeItem(`sp_version_${surveyId}`);
-                    alert('Survey has been reset! All visitors can now take the survey again.');
+                    submit({ intent: "reset_survey" }, { method: "POST" });
                   }
                 }}>
                   Reset Survey
