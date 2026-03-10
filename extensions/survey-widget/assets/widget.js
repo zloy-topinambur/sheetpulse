@@ -215,10 +215,11 @@
            if(check) {
              check.style.opacity = b.classList.contains('is-s') ? '1' : '0';
            }
-        } else if (q.type.includes('emoji')) {
+        } else if (b.classList.contains('sp-e-btn')) {
            selected = [v];
            container.querySelectorAll('.sp-e-btn').forEach(el => {
              el.classList.remove('is-s');
+             el.style.transform = '';
            });
            b.classList.add('is-s');
         } else if (q.type === 'scale') {

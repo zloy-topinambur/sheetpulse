@@ -8,7 +8,7 @@
 /* ЭМОДЗИ ЛАЙАУТ */
 .sp-ems { display: flex; justify-content: space-between; align-items: center; flex-wrap: nowrap; margin-bottom: 10px; width: 100%; box-sizing: border-box; min-height: 44px; }
 .sp-e-btn { font-size: 38px; border: none; background: none!important; cursor: pointer; transition: transform 0.15s; padding: 0; line-height: 1; flex-shrink: 0; }
-.sp-e-btn:hover { transform: scale(1.1); }
+.sp-e-btn:not(.is-s):hover { transform: scale(1.1); }
 .sp-ems-5 { gap: 2px; }
 .sp-ems-5 .sp-e-btn { font-size: 26px; }
 
