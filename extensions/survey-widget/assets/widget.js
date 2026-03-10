@@ -2,6 +2,7 @@
   // Debug logging
   console.log('🎯 SheetPulse: Starting widget initialization');
   console.log('📋 SheetPulse config:', window.SheetPulse);
+  console.log('🎯 SheetPulse: Widget Version: 2024-03-11-02:00');
 
   // Check if window.SheetPulse is defined
   if (!window.SheetPulse) {
