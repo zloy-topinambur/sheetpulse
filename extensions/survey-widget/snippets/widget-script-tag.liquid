@@ -1,0 +1,36 @@
+{% comment %}
+  Альтернативный способ загрузки виджета через script tag
+  Используется вместо app embed для избежания кэширования
+  
+  Как использовать:
+  1. Shopify Admin → Online Store → Themes → Actions → Edit code
+  2. Найдите theme.liquid или layout.liquid
+  3. Вставьте этот код в <head> секцию
+  
+  Преимущества:
+  - Нет кэширования Shopify app embed
+  - Простое cache-busting через параметры
+  - Легко контролировать загрузку
+{% endcomment %}
+
+{% if app.metafields.sheet_pulse.status == 'active' %}
+  <script>
+    window.SheetPulse = {
+      questions: {{ app.metafields.sheet_pulse.q_json | default: '[]' }},
+      googleUrl: "{{ app.metafields.sheet_pulse.g_url | default: '' }}",
+      triggerType: "{{ app.metafields.sheet_pulse.t_type | default: 'timer' }}",
+      tVal: "{{ app.metafields.sheet_pulse.t_val | default: '3' }}",
+      targetDevice: "{{ app.metafields.sheet_pulse.t_dev | default: 'all' }}",
+      accentColor: "{{ app.metafields.sheet_pulse.a_col | default: '000000' }}",
+      lang: "{{ app.metafields.sheet_pulse.lang | default: 'en' }}",
+      status: "{{ app.metafields.sheet_pulse.status | default: 'active' }}",
+      surveyVersion: "{{ app.metafields.sheet_pulse.survey_version | default: '' }}",
+      widgetPosition: "{{ app.metafields.sheet_pulse.w_pos | default: 'right' }}"
+    };
+
+    console.log("✅ SheetPulse initialized:", window.SheetPulse);
+  </script>
+
+  <link rel="stylesheet" href="{{ 'widget.css' | asset_url }}?v={{ 'now' | date: '%s' }}">
+  <script src="{{ 'widget.js' | asset_url }}?v={{ 'now' | date: '%s' }}" defer></script>
+{% endif %}
