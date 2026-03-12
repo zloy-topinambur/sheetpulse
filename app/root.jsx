@@ -32,6 +32,26 @@ export default function App() {
         <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
         <Meta />
         <Links />
+        {/* Widget Script Tag */}
+        <script>
+          {`
+            window.SheetPulse = {
+              questions: [],
+              googleUrl: "",
+              triggerType: "timer",
+              tVal: "3",
+              targetDevice: "all",
+              accentColor: "#000000",
+              lang: "en",
+              status: "active",
+              surveyVersion: "",
+              widgetPosition: "right"
+            };
+            console.log("✅ SheetPulse initialized:", window.SheetPulse);
+          `}
+        </script>
+        <link rel="stylesheet" href="/widget/widget.css?v={{ 'now' | date: '%s' }}" />
+        <script src="/widget/widget.js?v={{ 'now' | date: '%s' }}" defer></script>
       </head>
       <body>
         <AppProvider isEmbeddedApp apiKey={apiKey}>
