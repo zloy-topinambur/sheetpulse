@@ -1,0 +1,112 @@
+/* SheetPulse Widget CSS - Version: 2024-03-11-02:00 */
+
+#sp-widget { position: fixed; bottom: 20px; right: 20px; z-index: 2147483647; font-family: -apple-system, system-ui, sans-serif; transition: 0.4s; box-sizing: border-box; }
+#sp-widget.sp-left { left: 20px; right: auto; }
+.sp-hidden { transform: translateY(150%); opacity: 0; }
+.sp-card { background: #fff; width: 290px; border-radius: 18px; box-shadow: 0 12px 50px rgba(0,0,0,0.15); padding: 20px; border: 1px solid #f0f0f0; position: relative; overflow: hidden; box-sizing: border-box; display: flex; flex-direction: column; height: 360px; max-height: 360px; }
+.sp-prog { font-size: 9px; font-weight: 800; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+.sp-q { font-weight: 700; margin-bottom: 15px; font-size: 15px; color: #111; line-height: 1.4; }
+.sp-body { flex: 1; min-height: 0; overflow-y: auto; padding-right: 4px; box-sizing: border-box; }
+
+/* ЭМОДЗИ ЛАЙАУТ */
+.sp-ems { display: flex; justify-content: space-between; align-items: center; flex-wrap: nowrap; margin-bottom: 10px; width: 100%; box-sizing: border-box; min-height: 44px; }
+.sp-e-btn { font-size: 38px; border: none; background: none!important; cursor: pointer; transition: transform 0.15s; padding: 0; line-height: 1; flex-shrink: 0; }
+.sp-e-btn:not(.is-s):hover { transform: scale(1.1); }
+.sp-ems-5 { gap: 2px; }
+.sp-ems-5 .sp-e-btn { font-size: 28px; }
+
+/* Выбор эмодзи - pop анимация как в рабочем варианте */
+.is-s { animation: sp-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+@keyframes sp-pop { 0% { transform: scale(1); } 50% { transform: scale(0.9); } 100% { transform: scale(1); } }
+
+.sp-list { display: flex; flex-direction: column; gap: 8px; }
+.sp-o { text-align: left; padding: 12px; border: 1px solid #eee; border-radius: 12px; background: #fff; cursor: pointer; font-size: 14px; color: #333; transition: 0.15s; display: flex; align-items: center; min-height: 44px; box-sizing: border-box; }
+.sp-o:hover { border-color: #ccc; }
+
+/* Checkbox styling - show checkmark when selected */
+.sp-c { 
+  width: 16px; 
+  height: 16px; 
+  border: 2px solid #ccc; 
+  margin-right: 10px; 
+  display: inline-flex; 
+  align-items: center; 
+  justify-content: center;
+  border-radius: 4px; 
+  flex-shrink: 0; 
+  transition: 0.15s;
+}
+
+/* Checkmark inside checkbox */
+.sp-check {
+  font-size: 12px;
+  font-weight: bold;
+  color: #fff;
+  opacity: 0;
+  transition: 0.15s;
+}
+
+/* Selected checkbox */
+.sp-o.is-s .sp-c { 
+  border-color: inherit; 
+  background: inherit; 
+}
+
+/* Об wrap для Other и Not sure */
+.sp-extras { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.sp-skip { margin-top: 0; text-align: center; color: #666; border: 1px dashed #ddd; justify-content: center; }
+.sp-input { width: 100%; border: 1px solid #eee; border-radius: 12px; padding: 12px; box-sizing: border-box; font-family: inherit; font-size: 13px; min-height: 44px; }
+
+.sp-nav { display: flex; gap: 10px; margin-top: 20px; }
+.sp-back-btn { flex: 1; padding: 12px; border: 1px solid #eee; border-radius: 12px; background: #fff; cursor: pointer; font-weight: 600; font-size: 13px; }
+.sp-next-btn { flex: 2; padding: 12px; border-radius: 12px; font-weight: 700; font-size: 14px; transition: opacity 0.3s, background 0.3s; }
+
+.sp-sc-row { display: grid; gap: 5px; }
+.sp-sc-b { padding: 12px 0; border: 1px solid #eee; border-radius: 8px; background: #fff; cursor: pointer; font-size: 13px; font-weight: 600; text-align:center; transition: 0.15s; min-height: 40px; }
+.sp-sc-b:hover { border-color: #ccc; }
+.sp-sc-b.is-s { border-color: #ccc; }
+.sp-sc-labs { display: flex; justify-content: space-between; font-size: 10px; color: #999; margin-top: 8px; }
+
+#sp-close { position: absolute; top: 12px; right: 12px; border: none; background: none; cursor: pointer; color: #bbb; font-size: 22px; line-height: 1; }
+.sp-thanks { 
+  text-align: center; 
+  padding: 20px 0; 
+  font-weight: 600; 
+  color: #333; 
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  #sp-widget { 
+    left: 10px; 
+    right: 10px; 
+    bottom: 10px; 
+    width: calc(100% - 20px) !important; 
+    max-width: 100% !important; 
+    margin-left: 10px !important; 
+    margin-right: 10px !important; 
+  } 
+  #sp-widget.sp-left { 
+    left: 10px; 
+    right: 10px; 
+  }
+  .sp-card { 
+    width: 100% !important; 
+    height: 70vh; 
+    max-height: 70vh; 
+    box-sizing: border-box; 
+  } 
+  .sp-thanks { 
+    text-align: center; 
+    width: 100%; 
+    display: block;
+    margin: 0 auto;
+    padding: 20px 0;
+  }
+  .sp-body { 
+    min-height: 0; 
+    padding: 0 10px;
+  }
+}

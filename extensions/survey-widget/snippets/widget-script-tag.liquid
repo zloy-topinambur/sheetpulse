@@ -31,6 +31,6 @@
     console.log("✅ SheetPulse initialized:", window.SheetPulse);
   </script>
 
-  <link rel="stylesheet" href="{{ 'widget.css' | asset_url }}?v={{ 'now' | date: '%s' }}">
-  <script src="{{ 'widget.js' | asset_url }}?v={{ 'now' | date: '%s' }}" defer></script>
+  <link rel="stylesheet" href="/widget/widget.css?v={{ 'now' | date: '%s' }}">
+  <script src="/widget/widget.js?v={{ 'now' | date: '%s' }}" defer></script>
 {% endif %}
