@@ -397,23 +397,6 @@ export default function Index() {
   const nav = useNavigation();
   const navigate = useNavigate();
 
-  // Клиентский редирект при отсутствии подписки
-  useEffect(() => {
-    if (!settings.hasSubscription && !settings.isDevStore) {
-      console.log("⚠️ No subscription on production store, redirecting to billing...");
-      // Небольшая задержка, чтобы убедиться, что подписка действительно не активна
-      const timer = setTimeout(() => {
-        console.log("🔄 Confirming no subscription, redirecting...");
-        navigate("/app/billing");
-      }, 1000);
-
-      return () => clearTimeout(timer);
-    } else if (settings.isDevStore) {
-      console.log("✅ Dev store detected, skipping subscription check");
-    } else {
-      console.log("✅ Subscription found:", settings.subscription);
-    }
-  }, [settings.hasSubscription, settings.isDevStore, settings.subscription, navigate]);
 
   const [questions, setQuestions] = useState(settings.questions);
   const [aCol, setACol] = useState(settings.aCol);
