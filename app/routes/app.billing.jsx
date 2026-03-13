@@ -195,6 +195,12 @@ export default function Billing() {
                     >
                       💳 Subscribe Now ($10/month)
                     </Button>
+
+                    <Button
+                      onClick={() => window.open('/app/update-widget', '_blank')}
+                    >
+                      🔧 Force Update Widget
+                    </Button>
                   </div>
                 </div>
               </div>

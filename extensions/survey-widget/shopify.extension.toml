@@ -12,5 +12,9 @@ handle = "survey-widget"
 path = "assets/*"
 
 
+[blocks.app_embed]
+name = "SheetPulse"
+handle = "app_embed"
+
 [[extensions.files]]
 path = "snippets/*.liquid"
