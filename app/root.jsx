@@ -50,8 +50,6 @@ export default function App() {
             console.log("✅ SheetPulse initialized:", window.SheetPulse);
           `}
         </script>
-        <link rel="stylesheet" href="/widget/widget.css?v={{ 'now' | date: '%s' }}" />
-        <script src="/widget/widget.js?v={{ 'now' | date: '%s' }}" defer></script>
       </head>
       <body>
         <AppProvider isEmbeddedApp apiKey={apiKey}>
