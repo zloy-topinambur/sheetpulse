@@ -3,6 +3,8 @@
   console.log('🎯 SheetPulse: Starting widget initialization');
   console.log('📋 SheetPulse config:', window.SheetPulse);
   console.log('🎯 SheetPulse: Widget Version: 2024-03-11-02:00');
+  console.log('🟢 ТЕСТ: Полное удаление старого виджета');
+  console.log('🟢 Commit hash: af07877f84f632a0d97b2b5f6adcfe5a1c1a0766');
 
   // Check if window.SheetPulse is defined
   if (!window.SheetPulse) {

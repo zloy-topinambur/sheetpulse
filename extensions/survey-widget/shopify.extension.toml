@@ -11,8 +11,6 @@ handle = "survey-widget"
 [[extensions.files]]
 path = "assets/*"
 
-[[extensions.files]]
-path = "blocks/*.liquid"
 
 [[extensions.files]]
 path = "snippets/*.liquid"

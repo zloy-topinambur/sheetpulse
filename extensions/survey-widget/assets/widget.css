@@ -1,4 +1,6 @@
 /* SheetPulse Widget CSS - Version: 2024-03-11-02:00 */
+/* 🟢 ТЕСТ: Полное удаление старого виджета */
+/* 🟢 Commit hash: af07877f84f632a0d97b2b5f6adcfe5a1c1a0766 */
 
 #sp-widget { position: fixed; bottom: 20px; right: 20px; z-index: 2147483647; font-family: -apple-system, system-ui, sans-serif; transition: 0.4s; box-sizing: border-box; }
 #sp-widget.sp-left { left: 20px; right: auto; }
