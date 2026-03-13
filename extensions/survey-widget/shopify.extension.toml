@@ -6,7 +6,7 @@ handle = "survey-widget"
 [[extensions]]
 type = "theme"
 name = "survey-widget"
-handle = "survey-widget"
+handle = "survey-widget-2"
 
 [[extensions.files]]
 path = "assets/*"
