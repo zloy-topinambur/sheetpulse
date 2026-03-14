@@ -3,6 +3,7 @@ api_version = "2024-10"
 [[extensions]]
 type = "theme"
 name = "survey-widget"
+handle = "survey-widget"
 
 [[extensions.files]]
 path = "blocks/*.liquid"
