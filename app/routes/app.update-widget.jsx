@@ -9,30 +9,58 @@ export const loader = async ({ request }) => {
 };
 
 export const action = async ({ request }) => {
-  const { session } = await authenticate.admin(request);
+  const { session, admin } = await authenticate.admin(request);
   
   try {
-    // Shopify API для обновления Extensions
-    const response = await fetch(`https://${session.shop}/admin/api/2025-04/extensions.json`, {
-      method: 'POST',
-      headers: {
-        'X-Shopify-Access-Token': session.accessToken,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        extension: {
-          type: 'theme',
-          handle: 'survey-widget',
-          force_update: true
-        }
-      })
-    });
+    // NOTE:
+    // Shopify does NOT provide a stable REST endpoint to "force update" a Theme App Extension.
+    // Theme extensions must be deployed via Shopify CLI (shopify app deploy).
+    // What we can do here is ensure the app_url metafield is set so Liquid can load the widget.
 
-    if (response.ok) {
-      return json({ success: true, message: 'Widget updated successfully' });
-    } else {
-      return json({ success: false, message: 'Failed to update widget' });
+    const appRes = await admin.graphql(`{currentAppInstallation{id}}`);
+    const appResData = await appRes.json();
+    if (appResData.errors) {
+      return json({
+        success: false,
+        message: `Failed to read currentAppInstallation.id: ${JSON.stringify(appResData.errors)}`,
+      });
     }
+
+    const appId = appResData.data.currentAppInstallation.id;
+    const appUrl = process.env.SHOPIFY_APP_URL || process.env.APP_URL || "https://sheetpulse.onrender.com";
+
+    const result = await admin.graphql(
+      `mutation set($m:[MetafieldsSetInput!]!){
+        metafieldsSet(metafields:$m){
+          metafields{namespace key value}
+          userErrors{field message}
+        }
+      }`,
+      {
+        variables: {
+          m: [
+            {
+              namespace: "sheet_pulse",
+              key: "app_url",
+              type: "single_line_text_field",
+              value: appUrl,
+              ownerId: appId,
+            },
+          ],
+        },
+      },
+    );
+
+    const resultData = await result.json();
+    const userErrors = resultData.data?.metafieldsSet?.userErrors || [];
+
+    return json({
+      success: userErrors.length === 0,
+      message:
+        userErrors.length === 0
+          ? "✅ app_url metafield updated. Note: Theme App Extension updates still require Shopify CLI deploy."
+          : `Metafield update errors: ${JSON.stringify(userErrors)}`,
+    });
   } catch (error) {
     return json({ success: false, message: 'Error updating widget' });
   }
@@ -45,9 +73,9 @@ export default function UpdateWidget() {
   return (
     <Page title="Update Widget">
       <Card>
-        <Text variant="headingMd" as="h2">Force Widget Update</Text>
+        <Text variant="headingMd" as="h2">Widget Sync</Text>
         <Text variant="bodyMd" as="p" color="subdued">
-          Force update the SheetPulse widget to get the latest version.
+          Ensures your store has correct app URL for loading widget assets.
         </Text>
         
         {actionData?.success && (
@@ -63,9 +91,7 @@ export default function UpdateWidget() {
         )}
         
         <form method="post">
-          <Button primary type="submit">
-            Force Update Widget
-          </Button>
+          <Button primary type="submit">Sync Widget</Button>
         </form>
       </Card>
     </Page>

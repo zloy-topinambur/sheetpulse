@@ -1,4 +1,11 @@
 (function() {
+  // Prevent double-init if the script is injected multiple times
+  if (window.__SHEETPULSE_WIDGET_LOADED__) {
+    console.log('ℹ️ SheetPulse: widget already initialized, skipping');
+    return;
+  }
+  window.__SHEETPULSE_WIDGET_LOADED__ = true;
+
   // Debug logging
   console.log('🎯 SheetPulse: Starting widget initialization');
   console.log('📋 SheetPulse config:', window.SheetPulse);
@@ -13,7 +20,32 @@
     return;
   }
 
-  const { questions, googleUrl, triggerType, tVal, targetDevice, accentColor, lang, status, surveyVersion, widgetPosition } = window.SheetPulse;
+  const {
+    questions: questionsRaw,
+    googleUrl,
+    triggerType: triggerTypeRaw,
+    tVal: tValRaw,
+    targetDevice,
+    accentColor,
+    lang,
+    status,
+    surveyVersion,
+    widgetPosition,
+  } = window.SheetPulse;
+
+  // Metafield JSON can come as string; normalize to an array
+  let questions = questionsRaw;
+  try {
+    if (typeof questionsRaw === 'string') {
+      questions = JSON.parse(questionsRaw);
+    }
+  } catch (e) {
+    console.error('❌ SheetPulse: Failed to parse questions JSON', e, questionsRaw);
+    questions = [];
+  }
+
+  const triggerType = String(triggerTypeRaw || 'timer').trim();
+  const tVal = String(tValRaw ?? '3').trim();
 
   // Early exit conditions with detailed logging
   if (status !== 'active') {
@@ -390,8 +422,9 @@
       try {
         const r = await fetch('/cart.js');
         const cart = await r.json();
-        console.log('SheetPulse: Cart check - items:', cart.item_count, 'threshold:', parseInt(tVal));
-        if (cart.item_count >= parseInt(tVal)) {
+        const threshold = Number.parseInt(tVal, 10);
+        console.log('SheetPulse: Cart check - items:', cart.item_count, 'threshold:', threshold);
+        if (Number.isFinite(threshold) && cart.item_count >= threshold) {
           console.log('SheetPulse: Cart threshold reached, showing survey');
           show();
         }
@@ -401,10 +434,11 @@
     }, 3000);
   } else {
     console.log('SheetPulse: Timer trigger - showing after', tVal, 'seconds');
-    console.log('SheetPulse: Calculated timeout:', parseInt(tVal)*1000, 'ms');
+    const timeoutMs = Number.parseInt(tVal, 10) * 1000;
+    console.log('SheetPulse: Calculated timeout:', timeoutMs, 'ms');
     setTimeout(() => {
       console.log('SheetPulse: Timer expired, showing survey');
       show();
-    }, parseInt(tVal)*1000);
+    }, Number.isFinite(timeoutMs) ? timeoutMs : 3000);
   }
 })();

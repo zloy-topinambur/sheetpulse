@@ -1,23 +1,40 @@
-{% if app.metafields.sheet_pulse.status == 'active' %}
+{%- comment -%}
+  SheetPulse Theme App Extension (App embed).
+
+  IMPORTANT:
+  - Do not require merchants to edit theme code.
+  - This block should work when merchant only enables the app embed.
+  - Metafields in Liquid are objects; always use `.value`.
+  - Widget assets are served from the app domain (Render) so every app deploy updates the widget immediately.
+{%- endcomment -%}
+
+{%- assign sp_status = app.metafields.sheet_pulse.status.value | default: 'active' -%}
+
+{%- if sp_status == 'active' -%}
+  {%- assign sp_app_url = app.metafields.sheet_pulse.app_url.value | default: 'https://sheetpulse.onrender.com' -%}
+  {%- assign sp_widget_js = sp_app_url | append: '/widget/widget.js' -%}
+  {%- assign sp_widget_css = sp_app_url | append: '/widget/widget.css' -%}
+  {%- assign sp_cache_bust = 'now' | date: '%s' -%}
+
   <script>
     window.SheetPulse = {
-      questions: {{ app.metafields.sheet_pulse.q_json | default: '[]' }},
-      googleUrl: "{{ app.metafields.sheet_pulse.g_url | default: '' }}",
-      triggerType: "{{ app.metafields.sheet_pulse.t_type | default: 'timer' }}",
-      tVal: "{{ app.metafields.sheet_pulse.t_val | default: '3' }}",
-      targetDevice: "{{ app.metafields.sheet_pulse.t_dev | default: 'all' }}",
-      accentColor: "{{ app.metafields.sheet_pulse.a_col | default: '000000' }}",
-      lang: "{{ app.metafields.sheet_pulse.lang | default: 'en' }}",
-      status: "{{ app.metafields.sheet_pulse.status | default: 'active' }}",
-      surveyVersion: "{{ app.metafields.sheet_pulse.survey_version | default: '' }}",
-      widgetPosition: "{{ app.metafields.sheet_pulse.w_pos | default: 'right' }}"
+      // q_json is stored as JSON metafield; in Liquid `.value` returns a string, so we parse on the widget side as well.
+      questions: {{ app.metafields.sheet_pulse.q_json.value | default: '[]' }},
+      googleUrl: {{ app.metafields.sheet_pulse.g_url.value | default: '' | json }},
+      triggerType: {{ app.metafields.sheet_pulse.t_type.value | default: 'timer' | json }},
+      tVal: {{ app.metafields.sheet_pulse.t_val.value | default: '3' | json }},
+      targetDevice: {{ app.metafields.sheet_pulse.t_dev.value | default: 'all' | json }},
+      accentColor: {{ app.metafields.sheet_pulse.a_col.value | default: '000000' | json }},
+      lang: {{ app.metafields.sheet_pulse.lang.value | default: 'en' | json }},
+      status: {{ app.metafields.sheet_pulse.status.value | default: 'active' | json }},
+      surveyVersion: {{ app.metafields.sheet_pulse.survey_version.value | default: '' | json }},
+      widgetPosition: {{ app.metafields.sheet_pulse.w_pos.value | default: 'right' | json }},
+      appUrl: {{ sp_app_url | json }}
     };
 
     console.log("✅ SheetPulse initialized:", window.SheetPulse);
-    console.log("🟢 ТЕСТ: App embed загрузка");
-    console.log("🟢 Commit hash: 70bf3e5");
   </script>
 
-  <link rel="stylesheet" href="/widget/widget.css?v={{ 'now' | date: '%s' }}">
-  <script src="/widget/widget.js?v={{ 'now' | date: '%s' }}" defer></script>
-{% endif %}
+  <link rel="stylesheet" href="{{ sp_widget_css }}?v={{ sp_cache_bust }}">
+  <script src="{{ sp_widget_js }}?v={{ sp_cache_bust }}" defer></script>
+{%- endif -%}

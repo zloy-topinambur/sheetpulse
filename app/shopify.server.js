@@ -23,6 +23,41 @@ function getAppUrl() {
   return `https://${url}`;
 }
 
+async function ensureAppUrlMetafield(admin) {
+  try {
+    const appUrl = getAppUrl();
+
+    const appRes = await admin.graphql(`{currentAppInstallation{id}}`);
+    const appResData = await appRes.json();
+    const appId = appResData.data?.currentAppInstallation?.id;
+    if (!appId) return;
+
+    await admin.graphql(
+      `mutation setAppUrl($m:[MetafieldsSetInput!]!){
+        metafieldsSet(metafields:$m){
+          metafields{namespace key value}
+          userErrors{field message}
+        }
+      }`,
+      {
+        variables: {
+          m: [
+            {
+              namespace: "sheet_pulse",
+              key: "app_url",
+              type: "single_line_text_field",
+              value: appUrl,
+              ownerId: appId,
+            },
+          ],
+        },
+      },
+    );
+  } catch (e) {
+    console.warn("⚠️ Failed to ensure app_url metafield:", e);
+  }
+}
+
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
   apiSecretKey: process.env.SHOPIFY_API_SECRET,
@@ -46,9 +81,15 @@ const shopify = shopifyApp({
     },
   },
   hooks: {
-    afterAuth: async ({ session }) => {
+    afterAuth: async ({ session, admin }) => {
       console.log("✅ Аутентификация успешна для магазина:", session.shop);
       shopify.registerWebhooks({ session });
+
+      // Ensure Theme App Extension can reliably load widget assets from the app domain
+      // without asking merchant to edit theme code.
+      if (admin) {
+        await ensureAppUrlMetafield(admin);
+      }
     },
   },
 
@@ -56,12 +97,6 @@ const shopify = shopifyApp({
     APP_UNINSTALLED: {
       deliveryMethod: DeliveryMethod.Http,
       callbackUrl: "/webhooks",
-    },
-  },
-  hooks: {
-    afterAuth: async ({ session }) => {
-      console.log("✅ Аутентификация успешна для магазина:", session.shop);
-      shopify.registerWebhooks({ session });
     },
   },
   future: {
