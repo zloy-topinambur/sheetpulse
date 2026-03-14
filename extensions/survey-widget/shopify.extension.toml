@@ -1,20 +1,16 @@
 name = "survey-widget"
 type = "theme"
 uid = "43394cbe-c2e0-f590-6060-6332843f9b75979b3af2"
-handle = "survey-widget"
 
-[[extensions]]
-type = "theme"
-name = "survey-widget"
-handle = "survey-widget-2"
+# Theme extensions don't need nested [[extensions]] definitions.
+# Having them can cause Shopify CLI to treat it as a different extension
+# (e.g. creating "survey-widget-2" and removing the original).
 
 [[extensions.files]]
 path = "assets/*"
 
-
-[blocks.app_embed]
-name = "SheetPulse"
-handle = "app_embed"
+[[extensions.files]]
+path = "blocks/*.liquid"
 
 [[extensions.files]]
 path = "snippets/*.liquid"
