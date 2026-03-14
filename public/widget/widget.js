@@ -17,6 +17,27 @@
   if (!window.SheetPulse) {
     console.error('❌ SheetPulse: window.SheetPulse is not defined!');
     console.error('❌ SheetPulse: Check if Liquid template is loading the config correctly');
+    
+    // Try to wait for the config to be loaded
+    console.log('⏳ SheetPulse: Waiting for config to be loaded...');
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    const checkConfig = setInterval(() => {
+      attempts++;
+      console.log(`⏳ SheetPulse: Attempt ${attempts}/${maxAttempts} to find window.SheetPulse`);
+      
+      if (window.SheetPulse) {
+        clearInterval(checkConfig);
+        console.log('✅ SheetPulse: Config found! Re-initializing...');
+        // Re-run the initialization with the found config
+        initWidget();
+      } else if (attempts >= maxAttempts) {
+        clearInterval(checkConfig);
+        console.error('❌ SheetPulse: Config still not found after 10 attempts, giving up');
+      }
+    }, 500);
+    
     return;
   }
 

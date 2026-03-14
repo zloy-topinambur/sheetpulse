@@ -1,6 +1,9 @@
 api_version = "2024-10"
 
 [[extensions]]
+
+uid = "43394cbe-c2e0-f590-6060-6332843f9b75979b3af2"
+
 type = "theme"
 name = "survey-widget"
 handle = "survey-widget"
