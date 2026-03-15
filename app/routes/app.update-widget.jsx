@@ -3,6 +3,19 @@ import { useLoaderData, useActionData } from "@remix-run/react";
 import { authenticate } from "../shopify.server.js";
 import { Button, Card, Page, Text } from "@shopify/polaris";
 
+// Функция для правильного формирования URL (копия из shopify.server.js)
+function getAppUrl() {
+  const url = process.env.SHOPIFY_APP_URL || process.env.APP_URL;
+  if (!url) {
+    // Для Render по умолчанию используем стандартный URL
+    return "https://sheetpulse.onrender.com";
+  }
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  return `https://${url}`;
+}
+
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
   return json({ shop: session.shop });
@@ -27,7 +40,7 @@ export const action = async ({ request }) => {
     }
 
     const appId = appResData.data.currentAppInstallation.id;
-    const appUrl = process.env.SHOPIFY_APP_URL || process.env.APP_URL || "https://sheetpulse.onrender.com";
+    const appUrl = process.env.SHOPIFY_APP_URL || process.env.APP_URL || getAppUrl();
 
     const result = await admin.graphql(
       `mutation set($m:[MetafieldsSetInput!]!){

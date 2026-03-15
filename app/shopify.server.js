@@ -16,7 +16,10 @@ import prisma from "./db.server";
 // Функция для правильного формирования URL
 function getAppUrl() {
   const url = process.env.SHOPIFY_APP_URL || process.env.APP_URL;
-  if (!url) return "http://localhost:3000";
+  if (!url) {
+    // Для Render по умолчанию используем стандартный URL
+    return "https://sheetpulse.onrender.com";
+  }
   if (url.startsWith('http://') || url.startsWith('https://')) {
     return url;
   }

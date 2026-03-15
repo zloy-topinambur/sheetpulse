@@ -7,6 +7,7 @@ name = "SheetPulse"
 # Application URL
 # Для локальной разработки: application_url = "http://localhost:3000"
 # Для production: application_url = "https://sheetpulse.onrender.com"
+# Убедитесь, что этот URL соответствует реальному домену вашего Render сервиса
 application_url = "https://sheetpulse.onrender.com"
 
 # Embedded app configuration
